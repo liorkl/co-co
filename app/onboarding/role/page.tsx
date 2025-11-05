@@ -1,6 +1,7 @@
 "use client";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import Link from "next/link";
 
 export default function RolePage() {
   const [loading, setLoading] = useState<string | null>(null);
@@ -18,7 +19,15 @@ export default function RolePage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-2xl font-semibold">Select your role</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-2xl font-semibold">Select your role</h1>
+        <Link 
+          href="/auth/signout" 
+          className="text-sm text-gray-500 hover:text-gray-700"
+        >
+          Sign out
+        </Link>
+      </div>
       <div className="flex gap-4">
         <button
           onClick={() => choose("CEO")}
