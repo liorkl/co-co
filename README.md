@@ -4,10 +4,11 @@ A platform that helps CEOs find their tech cofounders (CTOs/first developers) an
 
 ## Features
 
-- **Magic link authentication** - Passwordless sign-in via email
+- **Magic link authentication** - Passwordless sign-in via email (separate signup/login flows)
 - **Role-specific interviews** - Tailored questionnaires for CEOs and CTOs
 - **AI-powered matching** - Uses embeddings and semantic similarity to find compatible matches
-- **Match explanations** - AI-generated rationale for each match
+- **Match insights** - AI-generated rationale and detailed profile information for each match
+- **Test data generation** - Scripts to populate test users for development
 
 ## Tech Stack
 
@@ -99,6 +100,10 @@ The migration will attempt to enable it automatically, but you may need to run i
 - `npm run lint` - Run ESLint
 - `npm run prisma:generate` - Generate Prisma Client
 - `npm run prisma:migrate` - Run database migrations
+- `npm run generate:test-data` - Generate test users (10 CEOs, 10 CTOs)
+- `npm run test:signin <email>` - Create test session for development
+- `npm run verify:neon` - Verify Neon database connection
+- `npm run test:email` - Send test email via Resend
 
 ## Development
 
