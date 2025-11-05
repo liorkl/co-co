@@ -32,6 +32,7 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+tsconfig.tsbuildinfo
 
 # prisma
 # Note: Migration SQL files are typically committed, but exclude if they contain sensitive data
