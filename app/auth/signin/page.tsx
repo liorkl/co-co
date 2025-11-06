@@ -25,12 +25,12 @@ export default function SignInPage() {
         <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
           <h2 className="mb-2 text-lg font-semibold text-blue-800">Check your email!</h2>
           <p className="text-blue-700">
-            We've sent a sign-in link to <strong>{email}</strong>. 
+            We&apos;ve sent a sign-in link to <strong>{email}</strong>. 
             Click the link in the email to access your account.
           </p>
         </div>
         <p className="text-sm text-gray-600">
-          Didn't receive the email? Check your spam folder or{" "}
+          Didn&apos;t receive the email? Check your spam folder or{" "}
           <button 
             onClick={() => setSent(false)} 
             className="text-blue-600 hover:underline"
@@ -79,7 +79,7 @@ export default function SignInPage() {
 
       <div className="border-t pt-4">
         <p className="text-center text-sm text-gray-600">
-          Don't have an account?{" "}
+          Don&apos;t have an account?{" "}
           <Link href="/auth/signup" className="text-blue-600 hover:underline">
             Sign up
           </Link>
