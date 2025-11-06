@@ -36,5 +36,10 @@ done
 echo ""
 echo "✅ Git hooks installed successfully!"
 echo ""
-echo "Hooks will now remind you to generate PR descriptions before pushing."
+echo "Hooks will now auto-generate PR descriptions before pushing."
+echo ""
+echo "💡 For fully automated PR creation, use:"
+echo "   npm run push"
+echo ""
+echo "   This will push your branch and automatically create a PR with the generated description."
 

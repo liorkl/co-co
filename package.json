@@ -19,6 +19,8 @@
     "ci:verify": "DATABASE_URL='postgresql://dummy:dummy@localhost:5432/dummy?schema=public' npx prisma generate && npm run lint && npx tsc --noEmit && echo '✅ All CI checks passed!'",
     "pr:description": "node scripts/generate-pr-description.js",
     "pr:prepare": "./scripts/create-pr.sh",
+    "pr:create": "./scripts/push-and-create-pr.sh",
+    "push": "./scripts/git-push-with-pr.sh",
     "setup:hooks": "./scripts/setup-git-hooks.sh"
   },
   "dependencies": {

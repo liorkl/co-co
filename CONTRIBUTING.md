@@ -106,21 +106,28 @@ npx tsc --noEmit
 2. Make your changes
 3. **Run CI locally** (see Pre-Push Checklist above)
 4. Ensure all tests pass and linting is clean
-5. **Generate PR description** (optional but recommended):
+5. **Push and create PR** (fully automated):
    ```bash
-   npm run pr:description
+   npm run push
    ```
-   This will analyze your branch and generate a PR description based on:
-   - Branch name and type
-   - Commit messages
-   - Changed files
-   - File statistics
+   This will:
+   - Auto-generate PR description
+   - Push your branch
+   - Automatically create PR with the description (if GitHub CLI is installed)
    
-   The description will be saved to `PR_DESCRIPTION.md` - copy it into your GitHub PR.
+   **Alternative:** Use regular `git push`, then:
+   ```bash
+   npm run pr:create
+   ```
+   This will push and create PR in one command.
    
-   **Note:** Cursor's "Create PR" button won't automatically run this script. Run it manually before creating the PR, then copy the generated description into the PR form.
-6. Create a pull request with a clear description
-7. Address any review feedback
+   **Manual option:** If you prefer manual control:
+   ```bash
+   npm run pr:description  # Generate description
+   git push                # Push branch
+   # Then create PR in Cursor/GitHub and copy description
+   ```
+6. Address any review feedback
 
 ### Keeping Main Branch Green
 **The `main` branch must always be green (all CI checks passing).**
