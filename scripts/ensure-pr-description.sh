@@ -13,11 +13,22 @@ if [ "$branch" = "$base_branch" ] || [ "$branch" = "develop" ]; then
 fi
 
 # Generate if missing or outdated
-# Compare against the branch ref file which updates on each commit
-branch_ref=".git/refs/heads/$branch"
-if [ ! -f "PR_DESCRIPTION.md" ] || [ ! -f "$branch_ref" ] || [ "PR_DESCRIPTION.md" -ot "$branch_ref" ]; then
+# Compare against the latest commit timestamp (more reliable than .git/HEAD or refs files)
+if [ ! -f "PR_DESCRIPTION.md" ]; then
+  # File doesn't exist, generate it
   if command -v npm >/dev/null 2>&1; then
     npm run pr:description >/dev/null 2>&1 || true
+  fi
+else
+  # File exists, check if it's older than the latest commit
+  latest_commit_time=$(git log -1 --format=%ct HEAD 2>/dev/null || echo "0")
+  file_mtime=$(stat -f %m "PR_DESCRIPTION.md" 2>/dev/null || stat -c %Y "PR_DESCRIPTION.md" 2>/dev/null || echo "0")
+  
+  if [ "$latest_commit_time" -gt "$file_mtime" ]; then
+    # Latest commit is newer than the file, regenerate
+    if command -v npm >/dev/null 2>&1; then
+      npm run pr:description >/dev/null 2>&1 || true
+    fi
   fi
 fi
 
