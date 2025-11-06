@@ -34,6 +34,9 @@ yarn-error.log*
 next-env.d.ts
 tsconfig.tsbuildinfo
 
+# generated files
+PR_DESCRIPTION.md
+
 # prisma
 # Note: Migration SQL files are typically committed, but exclude if they contain sensitive data
 # /prisma/migrations/*.sql
