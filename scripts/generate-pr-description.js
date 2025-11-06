@@ -99,7 +99,40 @@ function determineChangeType(files) {
   return types.length > 0 ? types[0] : 'Code change';
 }
 
-function generateDescription(branchInfo, commits, files, stats) {
+function runTests() {
+  console.log('🧪 Running tests...');
+  try {
+    // Check if test script exists first
+    const packageJson = JSON.parse(fs.readFileSync(path.join(__dirname, '../package.json'), 'utf-8'));
+    if (!packageJson.scripts || !packageJson.scripts.test) {
+      console.log('   ℹ️  No test script found');
+      return null; // No test script
+    }
+    
+    // Run tests silently
+    execSync('npm test', { stdio: 'pipe', encoding: 'utf-8' });
+    console.log('   ✅ Tests passed');
+    return true;
+  } catch (error) {
+    console.log('   ❌ Tests failed');
+    return false; // Test script exists but failed
+  }
+}
+
+function runCIVerify() {
+  console.log('🔍 Running CI verification...');
+  try {
+    // Run CI checks silently
+    execSync('npm run ci:verify', { stdio: 'pipe', encoding: 'utf-8' });
+    console.log('   ✅ CI checks passed');
+    return true;
+  } catch (error) {
+    console.log('   ❌ CI checks failed');
+    return false;
+  }
+}
+
+function generateDescription(branchInfo, commits, files, stats, testsPassed, ciPassed) {
   const branchName = branchInfo.full;
   const changeType = determineChangeType(files);
   const commitDetails = getCommitDetails(BASE_BRANCH, getCurrentBranch());
@@ -203,9 +236,25 @@ function generateDescription(branchInfo, commits, files, stats) {
   }
   
   description += `## Testing\n`;
-  description += `- [ ] Tests pass locally\n`;
+  
+  // Tests pass locally - auto-check if tests exist and pass
+  if (testsPassed === true) {
+    description += `- [x] Tests pass locally ✅ (automated verification)\n`;
+  } else if (testsPassed === false) {
+    description += `- [ ] Tests pass locally ❌ (failed - please fix)\n`;
+  } else {
+    description += `- [ ] Tests pass locally (no test script found)\n`;
+  }
+  
+  // Manual testing - always manual
   description += `- [ ] Manual testing completed\n`;
-  description += `- [ ] CI checks pass (run \`npm run ci:verify\`)\n`;
+  
+  // CI checks - auto-check if passes
+  if (ciPassed) {
+    description += `- [x] CI checks pass ✅ (automated verification)\n`;
+  } else {
+    description += `- [ ] CI checks pass ❌ (failed - run \`npm run ci:verify\` to fix)\n`;
+  }
   description += `\n`;
   
   description += `## Checklist\n`;
@@ -245,7 +294,13 @@ function main() {
     process.exit(1);
   }
   
-  const description = generateDescription(branchInfo, commits, files, stats);
+  // Run automated checks before generating description
+  console.log('🔍 Running automated verification checks...\n');
+  const testsPassed = runTests();
+  const ciPassed = runCIVerify();
+  console.log(''); // Empty line after checks
+  
+  const description = generateDescription(branchInfo, commits, files, stats, testsPassed, ciPassed);
   
   // Write to file
   const outputPath = path.join(__dirname, '../PR_DESCRIPTION.md');
