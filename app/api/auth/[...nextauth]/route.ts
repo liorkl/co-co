@@ -80,9 +80,10 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           });
           
           console.log("✅ Email sent successfully! Result:", JSON.stringify(result, null, 2));
-          console.log("📬 Email ID:", result.id);
+          if (result.data?.id) {
+            console.log("📬 Email ID:", result.data.id);
+          }
           console.log("🔗 Magic link URL:", url);
-          return result;
         } catch (error: any) {
           console.error("❌ Error sending email:", error);
           // Log more details if available
@@ -101,9 +102,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         accountProvider: account?.provider,
         isNewUser
       });
-    },
-    async signInMessage({ message }) {
-      console.log("📧 Sign in message event:", message);
     },
   },
   callbacks: {

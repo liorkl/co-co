@@ -25,12 +25,12 @@ export default function SignUpPage() {
         <div className="rounded-lg border border-green-200 bg-green-50 p-4">
           <h2 className="mb-2 text-lg font-semibold text-green-800">Check your email!</h2>
           <p className="text-green-700">
-            We've sent a sign-up link to <strong>{email}</strong>. 
+            We&apos;ve sent a sign-up link to <strong>{email}</strong>. 
             Click the link in the email to create your account.
           </p>
         </div>
         <p className="text-sm text-gray-600">
-          Didn't receive the email? Check your spam folder or{" "}
+          Didn&apos;t receive the email? Check your spam folder or{" "}
           <button 
             onClick={() => setSent(false)} 
             className="text-blue-600 hover:underline"
