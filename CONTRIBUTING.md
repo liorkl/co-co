@@ -6,9 +6,14 @@ Thank you for your interest in contributing! This document provides guidelines a
 
 1. Fork and clone the repository
 2. Install dependencies: `npm install`
-3. Set up environment variables (see README.md)
-4. Run database migrations: `npx prisma migrate dev`
-5. Start development server: `npm run dev`
+3. **Set up git hooks** (recommended):
+   ```bash
+   npm run setup:hooks
+   ```
+   This installs pre-push hooks that remind you to generate PR descriptions before pushing.
+4. Set up environment variables (see README.md)
+5. Run database migrations: `npx prisma migrate dev`
+6. Start development server: `npm run dev`
 
 ## Git Workflow
 
