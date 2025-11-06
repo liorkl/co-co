@@ -10,7 +10,7 @@ Thank you for your interest in contributing! This document provides guidelines a
    ```bash
    npm run setup:hooks
    ```
-   This installs pre-push hooks that remind you to generate PR descriptions before pushing.
+   This installs pre-push hooks that automatically generate PR descriptions before pushing.
 4. Set up environment variables (see README.md)
 5. Run database migrations: `npx prisma migrate dev`
 6. Start development server: `npm run dev`
