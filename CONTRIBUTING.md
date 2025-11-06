@@ -30,6 +30,24 @@ Branches should be descriptive, concise, and self-explanatory. Both humans and A
 - Keep it under 50 characters when possible
 - Avoid abbreviations unless they're universally understood
 
+### Single-Purpose Branches
+**Each branch should focus on a single task or goal.** Mixing different tasks in one branch makes it difficult to understand the purpose (the "what" and "why") and complicates code review, debugging, and rollback.
+
+**When to create separate branches:**
+- Different features or fixes
+- Different types of changes (e.g., code changes vs. documentation)
+- Changes that serve different purposes or solve different problems
+- When the branch name would need "and" to describe multiple unrelated changes
+
+**Examples:**
+- ❌ **Bad:** `fix/auth-and-ci-workflow` - Two unrelated fixes
+- ✅ **Good:** `fix/auth-session-expiry` and `fix/ci-workflow-prisma-before-tsc` - Separate branches
+
+- ❌ **Bad:** `feature/user-profile-and-email-notifications` - Two different features
+- ✅ **Good:** `feature/user-profile-editing` and `feature/email-notifications` - Separate branches
+
+**If you're unsure whether changes belong in separate branches, ask before committing.** It's better to clarify upfront than to split branches later.
+
 ### Commit Messages
 Commit messages should follow conventional commits format and be descriptive enough that both humans and AI agents can understand the change and its purpose at a glance.
 
