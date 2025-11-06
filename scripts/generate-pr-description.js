@@ -246,9 +246,6 @@ function generateDescription(branchInfo, commits, files, stats, testsPassed, ciP
     description += `- [ ] Tests pass locally (no test script found)\n`;
   }
   
-  // Manual testing - always manual
-  description += `- [ ] Manual testing completed\n`;
-  
   // CI checks - auto-check if passes
   if (ciPassed) {
     description += `- [x] CI checks pass ✅ (automated verification)\n`;
