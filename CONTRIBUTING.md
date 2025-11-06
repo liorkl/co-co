@@ -121,11 +121,22 @@ npx tsc --noEmit
    ```
    This will push and create PR in one command.
    
-   **Manual option:** If you prefer manual control:
+   **Using Cursor's "Create PR" button:**
+   ```bash
+   # Before clicking "Create PR" in Cursor:
+   npm run pr:cursor
+   ```
+   This ensures the description is ready and opens it for easy copy-paste.
+   
+   **Note:** The pre-push hook automatically generates the description when you push,
+   so it's usually already ready. The `pr:cursor` command just ensures it's up-to-date
+   and opens it for convenience.
+   
+   **Manual option:** If you prefer full manual control:
    ```bash
    npm run pr:description  # Generate description
    git push                # Push branch
-   # Then create PR in Cursor/GitHub and copy description
+   # Then create PR in Cursor/GitHub and copy description from PR_DESCRIPTION.md
    ```
 6. Address any review feedback
 
