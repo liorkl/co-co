@@ -13,7 +13,9 @@ if [ "$branch" = "$base_branch" ] || [ "$branch" = "develop" ]; then
 fi
 
 # Generate if missing or outdated
-if [ ! -f "PR_DESCRIPTION.md" ] || [ "PR_DESCRIPTION.md" -ot ".git/HEAD" ]; then
+# Compare against the branch ref file which updates on each commit
+branch_ref=".git/refs/heads/$branch"
+if [ ! -f "PR_DESCRIPTION.md" ] || [ ! -f "$branch_ref" ] || [ "PR_DESCRIPTION.md" -ot "$branch_ref" ]; then
   if command -v npm >/dev/null 2>&1; then
     npm run pr:description >/dev/null 2>&1 || true
   fi
