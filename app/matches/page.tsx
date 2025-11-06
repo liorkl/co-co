@@ -99,14 +99,14 @@ export default function MatchesPage() {
           <div className="mx-auto max-w-md space-y-4">
             <div className="text-4xl">🔍</div>
             <h2 className="text-xl font-semibold text-gray-900">
-              We're searching for your perfect match
+              We&apos;re searching for your perfect match
             </h2>
             <p className="text-gray-600">
               Our AI is analyzing profiles to find the best cofounder match for you. 
               This process takes a bit of time to ensure quality matches.
             </p>
             <p className="text-sm text-gray-500">
-              We'll notify you via email as soon as we find potential matches. 
+              We&apos;ll notify you via email as soon as we find potential matches. 
               Sit tight—great partnerships are worth the wait!
             </p>
           </div>
