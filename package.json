@@ -20,6 +20,7 @@
     "pr:description": "node scripts/generate-pr-description.js",
     "pr:prepare": "./scripts/create-pr.sh",
     "pr:create": "./scripts/push-and-create-pr.sh",
+    "pr:cursor": "./scripts/prepare-for-cursor-pr.sh",
     "push": "./scripts/git-push-with-pr.sh",
     "setup:hooks": "./scripts/setup-git-hooks.sh"
   },
