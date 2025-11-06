@@ -178,6 +178,62 @@ npx tsc --noEmit
 - Write self-documenting code with clear variable names
 - Add comments for complex logic
 
+## GitHub Automation
+
+### Automated PR Creation
+
+The project includes automated PR creation that:
+- Auto-generates PR descriptions from commits
+- Auto-labels PRs based on branch type (`feature/` → `enhancement`, `fix/` → `bug`, etc.)
+- Opens PRs in browser after creation
+- Supports auto-reviewer assignment (via `GITHUB_AUTO_REVIEWER` env var)
+
+**Usage:**
+```bash
+# Push and auto-create PR
+npm run push
+
+# Or manually create PR
+npm run pr:create
+```
+
+### GitHub API Helper
+
+Advanced GitHub operations via `github-api-helper.sh`:
+
+```bash
+# List all repository labels
+npm run github:labels
+
+# Setup standard labels (bug, enhancement, documentation, etc.)
+npm run github:setup-labels
+
+# Get detailed PR information
+npm run github:pr-details
+
+# Add labels to current PR
+./scripts/github-api-helper.sh add-labels bug high-priority
+
+# Add reviewers to current PR
+./scripts/github-api-helper.sh add-reviewers username
+```
+
+### GitHub MCP Server (Optional)
+
+For AI-driven GitHub operations, set up the GitHub MCP server:
+
+1. See `docs/GITHUB_MCP_SETUP.md` for detailed setup instructions
+2. Enables natural language GitHub commands in Cursor
+3. Complements existing GitHub CLI automation
+
+**Quick Setup:**
+```bash
+# Automated setup (uses remote GitHub-hosted server, no Docker needed)
+npm run github:mcp:setup
+
+# Or see docs/GITHUB_MCP_SETUP.md for manual setup
+```
+
 ## Testing
 
 Before submitting a PR:
