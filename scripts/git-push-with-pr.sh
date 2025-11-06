@@ -55,6 +55,12 @@ if git push "$@"; then
       
       if [ $? -eq 0 ]; then
         echo "✅ Pull request created: $pr_url"
+        # Extract PR number from URL or use existing_pr
+        pr_number=$(echo "$pr_url" | grep -oE '/pull/[0-9]+' | grep -oE '[0-9]+' || echo "$existing_pr")
+        if [ -n "$pr_number" ]; then
+          echo "🌐 Opening PR in browser..."
+          gh pr view "$pr_number" --web 2>/dev/null || open "$pr_url" 2>/dev/null || true
+        fi
       else
         echo "⚠️  Failed to auto-create PR"
         echo "   PR description is in PR_DESCRIPTION.md"
@@ -62,6 +68,8 @@ if git push "$@"; then
       fi
     else
       echo "✅ PR already exists for this branch"
+      echo "🌐 Opening PR in browser..."
+      gh pr view "$existing_pr" --web 2>/dev/null || true
     fi
   else
     echo "💡 PR description ready in PR_DESCRIPTION.md"
