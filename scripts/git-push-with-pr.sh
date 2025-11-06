@@ -58,18 +58,43 @@ if git push "$@"; then
         npm run pr:description >/dev/null 2>&1 || true
       fi
       
-      # Create PR
-      pr_url=$(gh pr create \
-        --base "$base_branch" \
-        --title "$title" \
-        --body-file PR_DESCRIPTION.md \
-        --head "$branch" 2>&1)
+      # Determine labels based on branch type
+      labels=""
+      if echo "$branch" | grep -qE "^feature/"; then
+        labels="enhancement"
+      elif echo "$branch" | grep -qE "^fix/"; then
+        labels="bug"
+      elif echo "$branch" | grep -qE "^docs/"; then
+        labels="documentation"
+      elif echo "$branch" | grep -qE "^refactor/"; then
+        labels="refactor"
+      fi
+      
+      # Create PR with labels if available
+      if [ -n "$labels" ]; then
+        pr_url=$(gh pr create \
+          --base "$base_branch" \
+          --title "$title" \
+          --body-file PR_DESCRIPTION.md \
+          --head "$branch" \
+          --label "$labels" 2>&1)
+      else
+        pr_url=$(gh pr create \
+          --base "$base_branch" \
+          --title "$title" \
+          --body-file PR_DESCRIPTION.md \
+          --head "$branch" 2>&1)
+      fi
       
       if [ $? -eq 0 ]; then
         echo "✅ Pull request created: $pr_url"
-        # Extract PR number from URL or use existing_pr
-        pr_number=$(echo "$pr_url" | grep -oE '/pull/[0-9]+' | grep -oE '[0-9]+' || echo "$existing_pr")
+        # Extract PR number from URL
+        pr_number=$(echo "$pr_url" | grep -oE '/pull/[0-9]+' | grep -oE '[0-9]+' || echo "")
         if [ -n "$pr_number" ]; then
+          # Try to add auto-reviewer if configured (optional)
+          if [ -n "$GITHUB_AUTO_REVIEWER" ]; then
+            gh pr edit "$pr_number" --add-reviewer "$GITHUB_AUTO_REVIEWER" 2>/dev/null || true
+          fi
           echo "🌐 Opening PR in browser..."
           gh pr view "$pr_number" --web 2>/dev/null || open "$pr_url" 2>/dev/null || true
         fi
