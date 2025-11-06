@@ -14,7 +14,9 @@
     "test:email": "node scripts/test-resend-email.js",
     "verify:email": "node scripts/verify-resend-email.js",
     "generate:test-data": "node scripts/generate-test-data.js",
-    "test:signin": "node scripts/create-test-session.js"
+    "test:signin": "node scripts/create-test-session.js",
+    "ci:local": "npm ci && DATABASE_URL='postgresql://dummy:dummy@localhost:5432/dummy?schema=public' npx prisma generate && npm run lint && npx tsc --noEmit && echo '✅ All CI checks passed!'",
+    "ci:verify": "DATABASE_URL='postgresql://dummy:dummy@localhost:5432/dummy?schema=public' npx prisma generate && npm run lint && npx tsc --noEmit && echo '✅ All CI checks passed!'"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.1",
