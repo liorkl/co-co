@@ -10,7 +10,8 @@ import { randomBytes } from "crypto";
  */
 export async function GET(request: Request) {
   // Only allow in development
-  if (process.env.NODE_ENV === "production") {
+  const isProduction = process.env.NODE_ENV !== "development" && process.env.NODE_ENV !== "test";
+  if (isProduction) {
     return NextResponse.json(
       { error: "Not available in production" },
       { status: 403 }
@@ -83,13 +84,14 @@ export async function GET(request: Request) {
     
     // Set the NextAuth session cookie
     // NextAuth v5 uses "authjs.session-token" in development
-    const cookieName = process.env.NODE_ENV === "production" 
+    const isProduction = process.env.NODE_ENV !== "development" && process.env.NODE_ENV !== "test";
+    const cookieName = isProduction 
       ? "__Secure-authjs.session-token"
       : "authjs.session-token";
     
     response.cookies.set(cookieName, token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: isProduction,
       sameSite: "lax",
       path: "/",
       maxAge: 30 * 24 * 60 * 60, // 30 days
@@ -98,7 +100,7 @@ export async function GET(request: Request) {
     // Also set the legacy cookie name for compatibility
     response.cookies.set("next-auth.session-token", token, {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: isProduction,
       sameSite: "lax",
       path: "/",
       maxAge: 30 * 24 * 60 * 60,
