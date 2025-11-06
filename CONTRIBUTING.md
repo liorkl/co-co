@@ -112,6 +112,8 @@ npx tsc --noEmit
    - File statistics
    
    The description will be saved to `PR_DESCRIPTION.md` - copy it into your GitHub PR.
+   
+   **Note:** Cursor's "Create PR" button won't automatically run this script. Run it manually before creating the PR, then copy the generated description into the PR form.
 6. Create a pull request with a clear description
 7. Address any review feedback
 
