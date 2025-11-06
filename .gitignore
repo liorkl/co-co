@@ -37,6 +37,11 @@ tsconfig.tsbuildinfo
 # generated files
 PR_DESCRIPTION.md
 
+# GitHub MCP server (external, not part of this repo)
+# The ~/github-mcp-server directory is cloned separately and contains .env with tokens
+# Cursor MCP config (contains GitHub token)
+~/.cursor/mcp.json
+
 # prisma
 # Note: Migration SQL files are typically committed, but exclude if they contain sensitive data
 # /prisma/migrations/*.sql
