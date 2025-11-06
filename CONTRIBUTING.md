@@ -101,8 +101,19 @@ npx tsc --noEmit
 2. Make your changes
 3. **Run CI locally** (see Pre-Push Checklist above)
 4. Ensure all tests pass and linting is clean
-5. Create a pull request with a clear description
-6. Address any review feedback
+5. **Generate PR description** (optional but recommended):
+   ```bash
+   npm run pr:description
+   ```
+   This will analyze your branch and generate a PR description based on:
+   - Branch name and type
+   - Commit messages
+   - Changed files
+   - File statistics
+   
+   The description will be saved to `PR_DESCRIPTION.md` - copy it into your GitHub PR.
+6. Create a pull request with a clear description
+7. Address any review feedback
 
 ### Keeping Main Branch Green
 **The `main` branch must always be green (all CI checks passing).**
