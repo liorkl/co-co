@@ -1,0 +1,21 @@
+#!/bin/sh
+# Git pre-push hook to remind about PR description generation
+
+branch=$(git branch --show-current)
+base_branch="main"
+
+# Check if we're pushing to a feature branch (not main)
+if [ "$branch" != "$base_branch" ] && [ "$branch" != "develop" ]; then
+  # Check if PR_DESCRIPTION.md exists and is recent (newer than last commit)
+  if [ ! -f "PR_DESCRIPTION.md" ] || [ "PR_DESCRIPTION.md" -ot ".git/HEAD" ]; then
+    echo ""
+    echo "💡 Tip: Generate PR description before creating PR:"
+    echo "   npm run pr:description"
+    echo ""
+    echo "   This will create PR_DESCRIPTION.md that you can copy into your PR."
+    echo ""
+  fi
+fi
+
+exit 0
+
