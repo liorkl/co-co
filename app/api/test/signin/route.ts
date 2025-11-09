@@ -1,6 +1,6 @@
-import { NextResponse } from "next/server";
+import { signIn } from "@/auth";
 import { prisma } from "@/lib/db";
-import { signIn } from "@/app/api/auth/[...nextauth]/route";
+import { NextResponse } from "next/server";
 import { createHash } from "crypto";
 
 /**
