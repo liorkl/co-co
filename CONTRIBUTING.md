@@ -140,6 +140,13 @@ npx tsc --noEmit
    ```
 6. Address any review feedback
 
+<<<<<<< HEAD
+### Pre-push Guardrails
+- Direct pushes to `main` or `develop` are blocked by default. Create a feature branch and open a PR instead.
+- Every push automatically runs `npm run lint`, `npx tsc --noEmit`, and `npm run test:unit` (if defined). Fix failures before reattempting.
+- To override once (not recommended), set `SKIP_PRE_PUSH_CHECKS=1` to skip checks or `ALLOW_PROTECTED_BRANCH_PUSH=1` to push to a protected branch.
+- Hooks install automatically via `npm install`. Reinstall manually with `npm run setup:hooks`.
+
 ### Multi-Agent / Parallel Workflow
 When several developers or Cursor agents work simultaneously, follow this branch discipline to avoid conflicts:
 
@@ -174,7 +181,7 @@ When several developers or Cursor agents work simultaneously, follow this branch
    git push origin --delete feature/short-description
    ```
 
-> Tip: Enable branch protection on `main` (required reviews, passing checks, up-to-date merges) so every branch stays healthy before landing.
+> Tip: Enable branch protection on `main` (required reviews, passing checks, up-to-date merges) and rely on the pre-push guardrails above so every branch stays healthy before landing.
 
 ### Keeping Main Branch Green
 **The `main` branch must always be green (all CI checks passing).**
