@@ -16,9 +16,26 @@ fi
 if [ "$BRANCH" = "$MAIN_BRANCH" ] || [ "$BRANCH" = "$DEVELOP_BRANCH" ]; then
   if [ "${ALLOW_PROTECTED_BRANCH_PUSH:-0}" != "1" ]; then
     echo "❌ Direct pushes to '$BRANCH' are blocked by repository guardrails."
-    echo "   Create a feature branch (e.g. feature/your-change) and open a PR instead."
+    echo "   Create a feature branch (e.g. feat/auth-improve-magic-link) and open a PR instead."
     echo "   Override once with: ALLOW_PROTECTED_BRANCH_PUSH=1 git push <remote> <branch>"
     exit 1
+  fi
+fi
+
+# Enforce descriptive branch naming for feature branches
+BRANCH_PATTERN='^(feat|fix|chore|docs|refactor|test)/[a-z0-9]+(-[a-z0-9]+){2,}$'
+if [ "$BRANCH" != "$MAIN_BRANCH" ] && [ "$BRANCH" != "$DEVELOP_BRANCH" ]; then
+  if [ "${SKIP_BRANCH_NAME_CHECK:-0}" != "1" ]; then
+    if ! printf "%s" "$BRANCH" | grep -Eq "$BRANCH_PATTERN"; then
+      echo "❌ Branch name '$BRANCH' is too generic."
+      echo "   Use format: <type>/<scope>-<objective>-<detail>"
+      echo "   Examples:"
+      echo "     feat/matching-add-skill-filters"
+      echo "     fix/auth-magic-link-email-copy"
+      echo "     chore/devops-improve-pre-push-guardrail"
+      echo "   Override once with SKIP_BRANCH_NAME_CHECK=1 (not recommended)."
+      exit 1
+    fi
   fi
 fi
 

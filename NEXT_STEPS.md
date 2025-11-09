@@ -126,11 +126,11 @@ npx prisma studio
 ```
 
 ### Making Changes
-1. Create a feature branch: `git checkout -b feature/your-feature`
+1. Create a feature branch: `git checkout -b feat/your-area-your-goal-your-detail`
 2. Make changes
 3. Test locally
 4. Commit: `git commit -m "feat: description"`
-5. Push: `git push -u origin feature/your-feature`
+5. Push: `git push -u origin feat/your-area-your-goal-your-detail`
 6. Create PR on GitHub
 
 ## 🐛 Troubleshooting
