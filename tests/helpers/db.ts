@@ -112,9 +112,23 @@ export async function seedEmbeddings(
   embeddings: Prisma.EmbeddingCreateManyInput[]
 ) {
   if (embeddings.length === 0) return [];
-  await prisma.embedding.createMany({ data: embeddings });
-  return prisma.embedding.findMany({
-    where: { userId: { in: embeddings.map((embedding) => embedding.userId) } },
+  const embeddingsWithIds: Array<Prisma.EmbeddingCreateManyInput & { id: string }> = embeddings.map(
+    (embedding) => {
+      const id = embedding.id ?? randomUUID();
+      return { ...embedding, id };
+    }
+  );
+  await prisma.embedding.createMany({ data: embeddingsWithIds });
+  const created = await prisma.embedding.findMany({
+    where: { id: { in: embeddingsWithIds.map((embedding) => embedding.id) } },
+  });
+  const createdById = new Map(created.map((embedding) => [embedding.id, embedding]));
+  return embeddingsWithIds.map((embedding) => {
+    const record = createdById.get(embedding.id);
+    if (!record) {
+      throw new Error(`Failed to fetch embedding with id ${embedding.id}`);
+    }
+    return record;
   });
 }
 
