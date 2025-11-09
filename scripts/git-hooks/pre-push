@@ -54,7 +54,20 @@ fi
 
 # Auto-generate PR description for feature branches when necessary
 if [ "$BRANCH" != "$MAIN_BRANCH" ] && [ "$BRANCH" != "$DEVELOP_BRANCH" ]; then
-  if [ ! -f "PR_DESCRIPTION.md" ] || [ "PR_DESCRIPTION.md" -ot ".git/HEAD" ]; then
+  NEEDS_PR_DESCRIPTION=0
+
+  if [ ! -f "PR_DESCRIPTION.md" ]; then
+    NEEDS_PR_DESCRIPTION=1
+  else
+    LATEST_COMMIT_TIME="$(git log -1 --format=%ct HEAD 2>/dev/null || printf '0')"
+    FILE_MTIME="$(stat -f %m "PR_DESCRIPTION.md" 2>/dev/null || stat -c %Y "PR_DESCRIPTION.md" 2>/dev/null || printf '0')"
+
+    if [ "$LATEST_COMMIT_TIME" -gt "$FILE_MTIME" ]; then
+      NEEDS_PR_DESCRIPTION=1
+    fi
+  fi
+
+  if [ "$NEEDS_PR_DESCRIPTION" = "1" ]; then
     echo "📝 Auto-generating PR description..."
     if command -v npm >/dev/null 2>&1; then
       if npm run pr:description >/dev/null 2>&1; then
