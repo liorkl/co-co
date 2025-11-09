@@ -1,8 +1,18 @@
-import "dotenv/config";
 import { execSync } from "node:child_process";
 import { randomUUID } from "node:crypto";
 import { PrismaClient } from "@prisma/client";
 import type { Prisma } from "@prisma/client";
+import { config as loadEnv } from "dotenv";
+import { existsSync } from "node:fs";
+import path from "node:path";
+
+const envFiles = [".env.test.local", ".env.test", ".env.local", ".env"];
+for (const file of envFiles) {
+  const resolved = path.resolve(process.cwd(), file);
+  if (existsSync(resolved)) {
+    loadEnv({ path: resolved, override: false });
+  }
+}
 
 type TestDbContext = {
   prisma: PrismaClient;
@@ -46,14 +56,27 @@ export async function setupTestDatabase(): Promise<TestDbContext> {
   await createSchema(adminClient, schema);
   await adminClient.$disconnect();
 
-  process.env.DATABASE_URL = urlWithSchema;
-
   // Run migrations against the isolated schema
   execSync("npx prisma migrate deploy", {
     stdio: "inherit",
+    env: {
+      ...process.env,
+      DATABASE_URL: urlWithSchema,
+    },
   });
 
-  const prisma = new PrismaClient();
+  // Ensure the schema matches the latest Prisma model definitions even if no migrations exist yet.
+  execSync("npx prisma db push --skip-generate", {
+    stdio: "inherit",
+    env: {
+      ...process.env,
+      DATABASE_URL: urlWithSchema,
+    },
+  });
+
+  const prisma = new PrismaClient({
+    datasources: { db: { url: urlWithSchema } },
+  });
 
   context = { prisma, schema };
   return context;
