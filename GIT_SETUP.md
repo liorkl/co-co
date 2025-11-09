@@ -43,5 +43,8 @@ git push -u origin main
 
 Your code is now on GitHub. The CI workflow will run automatically on future pushes.
 
-For more details, see `.github/SETUP.md`
+For more details:
+
+- `README.md` → “Git & GitHub Workflow”
+- `docs/GITHUB_MCP_SETUP.md` for Cursor + MCP tooling
 

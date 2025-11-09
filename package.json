@@ -31,7 +31,10 @@
     "github:labels": "./scripts/github-api-helper.sh list-labels",
     "github:setup-labels": "./scripts/github-api-helper.sh setup-labels",
     "github:pr-details": "./scripts/github-api-helper.sh pr-details",
-    "github:mcp:setup": "./scripts/setup-github-mcp.sh"
+    "github:mcp:setup": "./scripts/setup-github-mcp.sh",
+    "github:copilot:setup": "./scripts/setup-gh-copilot.sh",
+    "postinstall": "node ./scripts/run-setup-hooks.js",
+    "hooks:status": "node ./scripts/hooks-status.js"
   },
   "dependencies": {
     "@auth/prisma-adapter": "^2.11.1",
