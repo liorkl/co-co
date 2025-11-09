@@ -80,13 +80,16 @@ fi
 
 echo ""
 echo "🚀 Pushing branch to $REMOTE..."
-PUSH_ARGS=(-u "$REMOTE" "$CURRENT_BRANCH")
+PUSH_CMD=(git push)
+
 if [ "$REBASE_PERFORMED" -eq 1 ]; then
   echo "ℹ️  Force-with-lease enabled because branch was rebased."
-  PUSH_ARGS=(--force-with-lease -u "$REMOTE" "$CURRENT_BRANCH")
+  PUSH_CMD+=(-u "$REMOTE" "$CURRENT_BRANCH" --force-with-lease)
+else
+  PUSH_CMD+=(-u "$REMOTE" "$CURRENT_BRANCH")
 fi
 
-git push "${PUSH_ARGS[@]}"
+"${PUSH_CMD[@]}"
 
 echo ""
 echo "📋 Creating pull request..."

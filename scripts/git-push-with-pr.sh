@@ -86,11 +86,14 @@ fi
 
 # Perform the actual git push
 echo "🚀 Pushing branch..."
-PUSH_CMD=(git push "$@")
+PUSH_CMD=(git push)
 
 if [ "$REBASE_PERFORMED" -eq 1 ]; then
   echo "ℹ️  Force-with-lease enabled because branch was rebased."
-  PUSH_CMD=(git push --force-with-lease "$@")
+  PUSH_CMD+=("$@")
+  PUSH_CMD+=(--force-with-lease)
+else
+  PUSH_CMD+=("$@")
 fi
 
 if "${PUSH_CMD[@]}"; then
