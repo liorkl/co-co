@@ -24,15 +24,31 @@ if [ "$CURRENT_BRANCH" = "$BASE_BRANCH" ] || [ "$CURRENT_BRANCH" = "develop" ]; 
 fi
 
 # Ensure we're up-to-date with the latest base branch before proceeding
+REBASE_PERFORMED=0
+
 if git remote get-url "$REMOTE" >/dev/null 2>&1; then
   echo "🔄 Refreshing '$REMOTE/$BASE_BRANCH'..."
   if git fetch "$REMOTE" "$BASE_BRANCH" --quiet; then
     if ! git merge-base --is-ancestor "$REMOTE/$BASE_BRANCH" "$CURRENT_BRANCH"; then
-      echo "❌ Branch '$CURRENT_BRANCH' is missing the latest commits from '$REMOTE/$BASE_BRANCH'."
-      echo "   Rebase or merge the latest '$BASE_BRANCH' before pushing:"
-      echo "     git fetch $REMOTE $BASE_BRANCH"
-      echo "     git rebase $REMOTE/$BASE_BRANCH"
-      exit 1
+      if [ "${SKIP_AUTO_REBASE:-0}" = "1" ]; then
+        echo "❌ Branch '$CURRENT_BRANCH' is missing the latest commits from '$REMOTE/$BASE_BRANCH'."
+        echo "   Rebase or merge the latest '$BASE_BRANCH' before continuing."
+        exit 1
+      fi
+
+      if [ -n "$(git status --porcelain)" ]; then
+        echo "❌ Branch '$CURRENT_BRANCH' is missing the latest commits from '$REMOTE/$BASE_BRANCH',"
+        echo "   but the working tree has uncommitted changes. Rebase manually after cleaning up."
+        exit 1
+      fi
+
+      echo "🔁 Auto-rebasing '$CURRENT_BRANCH' onto '$REMOTE/$BASE_BRANCH'..."
+      if ! git rebase "$REMOTE/$BASE_BRANCH"; then
+        echo "❌ Auto rebase failed. Resolve conflicts and rerun the script."
+        exit 1
+      fi
+      echo "✅ Rebase completed."
+      REBASE_PERFORMED=1
     fi
   else
     echo "⚠️  Unable to fetch '$REMOTE/$BASE_BRANCH'; continuing without freshness check."
@@ -64,7 +80,16 @@ fi
 
 echo ""
 echo "🚀 Pushing branch to $REMOTE..."
-git push -u "$REMOTE" "$CURRENT_BRANCH"
+PUSH_CMD=(git push)
+
+if [ "$REBASE_PERFORMED" -eq 1 ]; then
+  echo "ℹ️  Force-with-lease enabled because branch was rebased."
+  PUSH_CMD+=(-u "$REMOTE" "$CURRENT_BRANCH" --force-with-lease)
+else
+  PUSH_CMD+=(-u "$REMOTE" "$CURRENT_BRANCH")
+fi
+
+"${PUSH_CMD[@]}"
 
 echo ""
 echo "📋 Creating pull request..."
