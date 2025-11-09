@@ -28,11 +28,24 @@ if git remote get-url "$REMOTE" >/dev/null 2>&1; then
   echo "🔄 Refreshing '$REMOTE/$BASE_BRANCH'..."
   if git fetch "$REMOTE" "$BASE_BRANCH" --quiet; then
     if ! git merge-base --is-ancestor "$REMOTE/$BASE_BRANCH" "$CURRENT_BRANCH"; then
-      echo "❌ Branch '$CURRENT_BRANCH' is missing the latest commits from '$REMOTE/$BASE_BRANCH'."
-      echo "   Rebase or merge the latest '$BASE_BRANCH' before pushing:"
-      echo "     git fetch $REMOTE $BASE_BRANCH"
-      echo "     git rebase $REMOTE/$BASE_BRANCH"
-      exit 1
+      if [ "${SKIP_AUTO_REBASE:-0}" = "1" ]; then
+        echo "❌ Branch '$CURRENT_BRANCH' is missing the latest commits from '$REMOTE/$BASE_BRANCH'."
+        echo "   Rebase or merge the latest '$BASE_BRANCH' before continuing."
+        exit 1
+      fi
+
+      if [ -n "$(git status --porcelain)" ]; then
+        echo "❌ Branch '$CURRENT_BRANCH' is missing the latest commits from '$REMOTE/$BASE_BRANCH',"
+        echo "   but the working tree has uncommitted changes. Rebase manually after cleaning up."
+        exit 1
+      fi
+
+      echo "🔁 Auto-rebasing '$CURRENT_BRANCH' onto '$REMOTE/$BASE_BRANCH'..."
+      if ! git rebase "$REMOTE/$BASE_BRANCH"; then
+        echo "❌ Auto rebase failed. Resolve conflicts and rerun the script."
+        exit 1
+      fi
+      echo "✅ Rebase completed."
     fi
   else
     echo "⚠️  Unable to fetch '$REMOTE/$BASE_BRANCH'; continuing without freshness check."
