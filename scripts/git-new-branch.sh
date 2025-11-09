@@ -9,9 +9,26 @@ if [ $# -lt 1 ]; then
   exit 1
 fi
 
-BRANCH_NAME="$1"
+INPUT_BRANCH="$1"
+BRANCH_NAME="$(printf "%s" "$INPUT_BRANCH" | tr '[:upper:]' '[:lower:]')"
 BASE_BRANCH="${2:-main}"
 REMOTE_NAME="${3:-origin}"
+
+if [ "$INPUT_BRANCH" != "$BRANCH_NAME" ]; then
+  echo "ℹ️  Normalized branch name to lowercase: $BRANCH_NAME"
+fi
+
+# Enforce descriptive branch naming convention
+BRANCH_PATTERN='^(feat|fix|chore|docs|refactor|test)/[a-z0-9]+(-[a-z0-9]+){2,}$'
+if ! printf "%s" "$BRANCH_NAME" | grep -Eq "$BRANCH_PATTERN"; then
+  echo "❌ Branch name '$BRANCH_NAME' is too generic."
+  echo "   Use format: <type>/<scope>-<objective>-<detail>"
+  echo "   Examples:"
+  echo "     feat/matching-add-skill-filters"
+  echo "     fix/auth-magic-link-email-copy"
+  echo "     chore/devops-improve-pre-push-guardrail"
+  exit 1
+fi
 
 # Ensure clean working tree before switching branches
 if [ -n "$(git status --porcelain)" ]; then

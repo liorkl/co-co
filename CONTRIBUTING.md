@@ -23,7 +23,7 @@ Branches should be descriptive, concise, and self-explanatory. Both humans and A
 **Format:** `<type>/<what>-<why>`
 
 **Examples:**
-- `feature/user-profile-editing` - Clear: adds profile editing feature
+- `feat/user-profile-editing-flow` - Clear: adds profile editing feature
 - `fix/auth-session-expiry` - Clear: fixes session expiration bug
 - `fix/ci-workflow-prisma-before-tsc-lint-ts-errors` - Clear: fixes CI workflow order and lint/TS errors
 - `refactor/match-algorithm-performance` - Clear: refactors matching for better performance
@@ -48,8 +48,8 @@ Branches should be descriptive, concise, and self-explanatory. Both humans and A
 - ❌ **Bad:** `fix/auth-and-ci-workflow` - Two unrelated fixes
 - ✅ **Good:** `fix/auth-session-expiry` and `fix/ci-workflow-prisma-before-tsc` - Separate branches
 
-- ❌ **Bad:** `feature/user-profile-and-email-notifications` - Two different features
-- ✅ **Good:** `feature/user-profile-editing` and `feature/email-notifications` - Separate branches
+- ❌ **Bad:** `feat/user-profile-and-email-notifications` - Two different objectives
+- ✅ **Good:** `feat/user-profile-editing-flow` and `feat/email-notification-settings` - Separate branches
 
 **If you're unsure whether changes belong in separate branches, ask before committing.** It's better to clarify upfront than to split branches later.
 
@@ -144,6 +144,7 @@ npx tsc --noEmit
 - Direct pushes to `main` or `develop` are blocked by default. Create a feature branch and open a PR instead.
 - Every push automatically runs `npm run lint`, `npx tsc --noEmit`, and `npm run test:unit` (if defined). Fix failures before reattempting.
 - The hook fetches `origin/main` and blocks the push if your branch is missing the latest commits. Rebase/merge first, or set `SKIP_MAIN_SYNC_CHECK=1` to override once (not recommended).
+- Branch names must follow `<type>/<scope>-<objective>-<detail>` (e.g. `fix/auth-magic-link-email-copy`). Override once with `SKIP_BRANCH_NAME_CHECK=1` if you really must (not recommended).
 - To skip the other checks once, set `SKIP_PRE_PUSH_CHECKS=1`. To push to a protected branch, set `ALLOW_PROTECTED_BRANCH_PUSH=1`.
 - Hooks install automatically via `npm install`. Reinstall manually with `npm run setup:hooks`.
 
@@ -157,12 +158,12 @@ When several developers or Cursor agents work simultaneously, follow this branch
    ```
    Or use the helper to refresh & create a branch in one step:
    ```bash
-   npm run branch:new -- feature/short-description
+   npm run branch:new -- feat/matching-short-description-update
    ```
 2. **Create or resume a feature branch per task**
    ```bash
-   git checkout -b feature/short-description   # new branch
-   # or git checkout feature/short-description # existing branch
+   git checkout -b feat/matching-short-description-update   # new branch
+   # or git checkout feat/matching-short-description-update # existing branch
    ```
 3. **Keep work isolated**
    - Commit only the files relevant to that task.
@@ -174,18 +175,23 @@ When several developers or Cursor agents work simultaneously, follow this branch
    - Any integration/E2E suites that apply to the change.
 5. **Push and create/update the PR**
    ```bash
-   git push origin feature/short-description
+   git push origin feat/matching-short-description-update
    npm run pr:description   # regenerates summary + checks
    ```
 6. **After merge, clean up**
    ```bash
    git checkout main
    git pull --ff-only
-   git branch -d feature/short-description
-   git push origin --delete feature/short-description
+   git branch -d feat/matching-short-description-update
+   git push origin --delete feat/matching-short-description-update
    ```
 
 > Tip: Enable branch protection on `main` (required reviews, passing checks, up-to-date merges) and rely on the pre-push guardrails above so every branch stays healthy before landing.
+
+### Commit Message & PR Title Helpers
+- New commits automatically pre-fill their message from the branch name (thanks to a `prepare-commit-msg` hook). Edit it as needed, but don’t leave generic subjects.
+- Auto PR creation (`npm run push` / `npm run pr:create`) formats PR titles from the branch name if no conventional-commit-style subject is found.
+- Clear branch names produce clear commit and PR titles—use the branch naming convention above.
 
 ### Keeping Main Branch Green
 **The `main` branch must always be green (all CI checks passing).**
@@ -231,7 +237,7 @@ When several developers or Cursor agents work simultaneously, follow this branch
 
 The project includes automated PR creation that:
 - Auto-generates PR descriptions from commits
-- Auto-labels PRs based on branch type (`feature/` → `enhancement`, `fix/` → `bug`, etc.)
+- Auto-labels PRs based on branch type (`feat/` → `enhancement`, `fix/` → `bug`, etc.)
 - Opens PRs in browser after creation
 - Supports auto-reviewer assignment (via `GITHUB_AUTO_REVIEWER` env var)
 
