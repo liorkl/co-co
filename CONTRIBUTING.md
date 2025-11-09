@@ -140,6 +140,42 @@ npx tsc --noEmit
    ```
 6. Address any review feedback
 
+### Multi-Agent / Parallel Workflow
+When several developers or Cursor agents work simultaneously, follow this branch discipline to avoid conflicts:
+
+1. **Always sync `main` first**
+   ```bash
+   git checkout main
+   git pull --ff-only
+   ```
+2. **Create or resume a feature branch per task**
+   ```bash
+   git checkout -b feature/short-description   # new branch
+   # or git checkout feature/short-description # existing branch
+   ```
+3. **Keep work isolated**
+   - Commit only the files relevant to that task.
+   - Stash or commit WIP changes before switching branches (`git stash push -m "context"`).
+4. **Run local verification on every update**
+   - `npm run test:unit`
+   - `npm run lint`
+   - `npx tsc --noEmit`
+   - Any integration/E2E suites that apply to the change.
+5. **Push and create/update the PR**
+   ```bash
+   git push origin feature/short-description
+   npm run pr:description   # regenerates summary + checks
+   ```
+6. **After merge, clean up**
+   ```bash
+   git checkout main
+   git pull --ff-only
+   git branch -d feature/short-description
+   git push origin --delete feature/short-description
+   ```
+
+> Tip: Enable branch protection on `main` (required reviews, passing checks, up-to-date merges) so every branch stays healthy before landing.
+
 ### Keeping Main Branch Green
 **The `main` branch must always be green (all CI checks passing).**
 
