@@ -1,4 +1,4 @@
-import { auth } from "@/app/api/auth/[...nextauth]/route";
+import { auth } from "@/auth";
 import { NextResponse } from "next/server";
 import { findMatchesFor } from "@/lib/match";
 import { prisma } from "@/lib/db";
