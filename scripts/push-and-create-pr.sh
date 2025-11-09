@@ -24,6 +24,8 @@ if [ "$CURRENT_BRANCH" = "$BASE_BRANCH" ] || [ "$CURRENT_BRANCH" = "develop" ]; 
 fi
 
 # Ensure we're up-to-date with the latest base branch before proceeding
+REBASE_PERFORMED=0
+
 if git remote get-url "$REMOTE" >/dev/null 2>&1; then
   echo "🔄 Refreshing '$REMOTE/$BASE_BRANCH'..."
   if git fetch "$REMOTE" "$BASE_BRANCH" --quiet; then
@@ -46,6 +48,7 @@ if git remote get-url "$REMOTE" >/dev/null 2>&1; then
         exit 1
       fi
       echo "✅ Rebase completed."
+      REBASE_PERFORMED=1
     fi
   else
     echo "⚠️  Unable to fetch '$REMOTE/$BASE_BRANCH'; continuing without freshness check."
@@ -77,7 +80,13 @@ fi
 
 echo ""
 echo "🚀 Pushing branch to $REMOTE..."
-git push -u "$REMOTE" "$CURRENT_BRANCH"
+PUSH_ARGS=(-u "$REMOTE" "$CURRENT_BRANCH")
+if [ "$REBASE_PERFORMED" -eq 1 ]; then
+  echo "ℹ️  Force-with-lease enabled because branch was rebased."
+  PUSH_ARGS=(--force-with-lease -u "$REMOTE" "$CURRENT_BRANCH")
+fi
+
+git push "${PUSH_ARGS[@]}"
 
 echo ""
 echo "📋 Creating pull request..."
