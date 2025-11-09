@@ -140,7 +140,6 @@ npx tsc --noEmit
    ```
 6. Address any review feedback
 
-<<<<<<< HEAD
 ### Pre-push Guardrails
 - Direct pushes to `main` or `develop` are blocked by default. Create a feature branch and open a PR instead.
 - Every push automatically runs `npm run lint`, `npx tsc --noEmit`, and `npm run test:unit` (if defined). Fix failures before reattempting.

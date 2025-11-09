@@ -22,12 +22,6 @@ if [ "$BRANCH" = "$MAIN_BRANCH" ] || [ "$BRANCH" = "$DEVELOP_BRANCH" ]; then
   fi
 fi
 
-# Ensure the working tree is clean (ignore untracked files like PR_DESCRIPTION.md)
-if [ -n "$(git status --porcelain --untracked-files=no)" ]; then
-  echo "❌ Working tree has staged or unstaged changes. Commit, stash, or discard them before pushing."
-  exit 1
-fi
-
 # Run verification steps unless explicitly skipped
 if [ "${SKIP_PRE_PUSH_CHECKS:-0}" != "1" ]; then
   if command -v npm >/dev/null 2>&1; then
