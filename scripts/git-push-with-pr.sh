@@ -35,15 +35,31 @@ for arg in "$@"; do
   esac
 done
 
+REBASE_PERFORMED=0
+
 if git remote get-url "$remote_guess" >/dev/null 2>&1; then
   echo "🔄 Refreshing '$remote_guess/$base_branch'..."
   if git fetch "$remote_guess" "$base_branch" --quiet; then
     if ! git merge-base --is-ancestor "$remote_guess/$base_branch" "$branch"; then
-      echo "❌ Branch '$branch' is missing the latest commits from '$remote_guess/$base_branch'."
-      echo "   Rebase or merge the latest '$base_branch' before pushing:"
-      echo "     git fetch $remote_guess $base_branch"
-      echo "     git rebase $remote_guess/$base_branch"
-      exit 1
+      if [ "${SKIP_AUTO_REBASE:-0}" = "1" ]; then
+        echo "❌ Branch '$branch' is missing the latest commits from '$remote_guess/$base_branch'."
+        echo "   Rebase or merge the latest '$base_branch' before pushing."
+        exit 1
+      fi
+
+      if [ -n "$(git status --porcelain)" ]; then
+        echo "❌ Branch '$branch' is missing the latest commits from '$remote_guess/$base_branch',"
+        echo "   but the working tree has uncommitted changes. Rebase manually after cleaning up."
+        exit 1
+      fi
+
+      echo "🔁 Auto-rebasing '$branch' onto '$remote_guess/$base_branch'..."
+      if ! git rebase "$remote_guess/$base_branch"; then
+        echo "❌ Auto rebase failed. Resolve conflicts and run the push again."
+        exit 1
+      fi
+      echo "✅ Rebase completed."
+      REBASE_PERFORMED=1
     fi
   else
     echo "⚠️  Unable to fetch '$remote_guess/$base_branch'; continuing without freshness check."
@@ -70,7 +86,17 @@ fi
 
 # Perform the actual git push
 echo "🚀 Pushing branch..."
-if git push "$@"; then
+PUSH_CMD=(git push)
+
+if [ "$REBASE_PERFORMED" -eq 1 ]; then
+  echo "ℹ️  Force-with-lease enabled because branch was rebased."
+  PUSH_CMD+=("$@")
+  PUSH_CMD+=(--force-with-lease)
+else
+  PUSH_CMD+=("$@")
+fi
+
+if "${PUSH_CMD[@]}"; then
   # Push succeeded, now create PR
   echo ""
   
