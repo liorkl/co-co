@@ -35,6 +35,8 @@ for arg in "$@"; do
   esac
 done
 
+REBASE_PERFORMED=0
+
 if git remote get-url "$remote_guess" >/dev/null 2>&1; then
   echo "🔄 Refreshing '$remote_guess/$base_branch'..."
   if git fetch "$remote_guess" "$base_branch" --quiet; then
@@ -57,6 +59,7 @@ if git remote get-url "$remote_guess" >/dev/null 2>&1; then
         exit 1
       fi
       echo "✅ Rebase completed."
+      REBASE_PERFORMED=1
     fi
   else
     echo "⚠️  Unable to fetch '$remote_guess/$base_branch'; continuing without freshness check."
@@ -83,7 +86,14 @@ fi
 
 # Perform the actual git push
 echo "🚀 Pushing branch..."
-if git push "$@"; then
+PUSH_CMD=(git push "$@")
+
+if [ "$REBASE_PERFORMED" -eq 1 ]; then
+  echo "ℹ️  Force-with-lease enabled because branch was rebased."
+  PUSH_CMD=(git push --force-with-lease "$@")
+fi
+
+if "${PUSH_CMD[@]}"; then
   # Push succeeded, now create PR
   echo ""
   
