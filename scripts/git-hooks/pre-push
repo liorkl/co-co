@@ -1,34 +1,76 @@
 #!/bin/sh
-# Git pre-push hook to auto-generate PR description and optionally create PR
+# Git pre-push guardrails + PR description automation
 
-branch=$(git branch --show-current)
-base_branch="main"
+set -eu
 
-# Check if we're pushing to a feature branch (not main)
-if [ "$branch" != "$base_branch" ] && [ "$branch" != "develop" ]; then
-  # Check if PR_DESCRIPTION.md exists and is recent (newer than last commit)
-  if [ ! -f "PR_DESCRIPTION.md" ] || [ "PR_DESCRIPTION.md" -ot ".git/HEAD" ]; then
-    echo ""
+BRANCH="$(git branch --show-current 2>/dev/null || printf '')"
+MAIN_BRANCH="main"
+DEVELOP_BRANCH="develop"
+
+# Allow bypassing when explicitly requested (e.g. CI, emergency)
+if [ "${SKIP_PRE_PUSH_GUARDS:-0}" = "1" ]; then
+  exit 0
+fi
+
+# Block direct pushes to protected branches unless explicitly allowed
+if [ "$BRANCH" = "$MAIN_BRANCH" ] || [ "$BRANCH" = "$DEVELOP_BRANCH" ]; then
+  if [ "${ALLOW_PROTECTED_BRANCH_PUSH:-0}" != "1" ]; then
+    echo "❌ Direct pushes to '$BRANCH' are blocked by repository guardrails."
+    echo "   Create a feature branch (e.g. feature/your-change) and open a PR instead."
+    echo "   Override once with: ALLOW_PROTECTED_BRANCH_PUSH=1 git push <remote> <branch>"
+    exit 1
+  fi
+fi
+
+# Run verification steps unless explicitly skipped
+if [ "${SKIP_PRE_PUSH_CHECKS:-0}" != "1" ]; then
+  if command -v npm >/dev/null 2>&1; then
+    echo "🔍 Running pre-push verification (lint, types, tests)..."
+
+    if ! npm run lint --silent >/dev/null 2>&1; then
+      echo "❌ Lint failed. Fix issues or set SKIP_PRE_PUSH_CHECKS=1 to bypass (not recommended)."
+      exit 1
+    fi
+
+    if ! npx tsc --noEmit >/dev/null 2>&1; then
+      echo "❌ Type check failed. Fix issues before pushing."
+      exit 1
+    fi
+
+    if ! npm run --if-present test:unit --silent >/dev/null 2>&1; then
+      echo "❌ Unit tests failed. Fix issues before pushing."
+      exit 1
+    fi
+  else
+    echo "⚠️  npm not found; skipping automated lint/type/test checks."
+  fi
+fi
+
+# Auto-generate PR description for feature branches when necessary
+if [ "$BRANCH" != "$MAIN_BRANCH" ] && [ "$BRANCH" != "$DEVELOP_BRANCH" ]; then
+  NEEDS_PR_DESCRIPTION=0
+
+  if [ ! -f "PR_DESCRIPTION.md" ]; then
+    NEEDS_PR_DESCRIPTION=1
+  else
+    LATEST_COMMIT_TIME="$(git log -1 --format=%ct HEAD 2>/dev/null || printf '0')"
+    FILE_MTIME="$(stat -f %m "PR_DESCRIPTION.md" 2>/dev/null || stat -c %Y "PR_DESCRIPTION.md" 2>/dev/null || printf '0')"
+
+    if [ "$LATEST_COMMIT_TIME" -gt "$FILE_MTIME" ]; then
+      NEEDS_PR_DESCRIPTION=1
+    fi
+  fi
+
+  if [ "$NEEDS_PR_DESCRIPTION" = "1" ]; then
     echo "📝 Auto-generating PR description..."
-    
-    # Run the PR description generator
     if command -v npm >/dev/null 2>&1; then
-      npm run pr:description >/dev/null 2>&1
-      if [ $? -eq 0 ]; then
+      if npm run pr:description >/dev/null 2>&1; then
         echo "✅ PR description generated in PR_DESCRIPTION.md"
-        echo ""
-        
-        # Note: For fully automated PR creation, use 'npm run push' instead of 'git push'
-        # That will push and automatically create PR with the description
       else
-        echo "⚠️  Failed to generate PR description. You can run manually:"
-        echo "   npm run pr:description"
-        echo ""
+        echo "⚠️  Failed to generate PR description automatically. Run 'npm run pr:description' manually."
       fi
     else
-      echo "⚠️  npm not found. Cannot auto-generate PR description."
-      echo "   Run manually: npm run pr:description"
-      echo ""
+      echo "⚠️  npm not found. Run 'npm run pr:description' manually."
     fi
   fi
 fi
