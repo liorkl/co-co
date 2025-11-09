@@ -14,6 +14,33 @@ if [ "$branch" = "$base_branch" ] || [ "$branch" = "develop" ]; then
   exit 0
 fi
 
+remote_guess="origin"
+for arg in "$@"; do
+  case "$arg" in
+    --*) ;; # skip long options
+    -*) ;;  # skip short options
+    *)
+      remote_guess="$arg"
+      break
+      ;;
+  esac
+done
+
+if git remote get-url "$remote_guess" >/dev/null 2>&1; then
+  echo "🔄 Refreshing '$remote_guess/$base_branch'..."
+  if git fetch "$remote_guess" "$base_branch" --quiet; then
+    if ! git merge-base --is-ancestor "$remote_guess/$base_branch" "$branch"; then
+      echo "❌ Branch '$branch' is missing the latest commits from '$remote_guess/$base_branch'."
+      echo "   Rebase or merge the latest '$base_branch' before pushing:"
+      echo "     git fetch $remote_guess $base_branch"
+      echo "     git rebase $remote_guess/$base_branch"
+      exit 1
+    fi
+  else
+    echo "⚠️  Unable to fetch '$remote_guess/$base_branch'; continuing without freshness check."
+  fi
+fi
+
 # Generate PR description if needed
 # Compare against the latest commit timestamp (more reliable than .git/HEAD or refs files)
 if [ ! -f "PR_DESCRIPTION.md" ]; then
