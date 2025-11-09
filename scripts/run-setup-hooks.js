@@ -70,10 +70,19 @@ console.log('🔧 Running postinstall git hook setup...');
 const result = spawnSync(hookScript, { stdio: 'inherit', shell: true });
 
 if (result.status !== 0) {
+  const exitCode =
+    typeof result.status === 'number' && result.status !== 0 ? result.status : 1;
+  const terminationReason =
+    result.status === null
+      ? result.signal
+        ? `terminated by signal ${result.signal}`
+        : 'terminated unexpectedly'
+      : `exit code ${result.status}`;
+
   console.warn(
-    `⚠️  Git hook setup encountered an error (exit code ${result.status}). Run \`npm run setup:hooks\` manually if needed.`
+    `⚠️  Git hook setup encountered an error (${terminationReason}). Run \`npm run setup:hooks\` manually if needed.`
   );
-  process.exit(result.status);
+  process.exit(exitCode);
 }
 
 console.log('✅ Git hooks installed via postinstall.');
