@@ -7,6 +7,15 @@ set -e
 branch=$(git branch --show-current)
 base_branch="main"
 
+format_branch_title() {
+  printf "%s" "$1" | tr '/-' '  ' | awk '{
+    for (i = 1; i <= NF; i++) {
+      $i = toupper(substr($i,1,1)) tolower(substr($i,2))
+    }
+    print
+  }'
+}
+
 # Only auto-create PR for feature branches
 if [ "$branch" = "$base_branch" ] || [ "$branch" = "develop" ]; then
   # Just do normal push for main/develop
@@ -77,7 +86,7 @@ if git push "$@"; then
       # Extract title from first commit or branch name
       title=$(git log -1 --pretty=%B | head -1)
       if [ -z "$title" ] || [ "$title" = "" ]; then
-        title=$(echo "$branch" | sed 's/.*\///' | sed 's/-/ /g' | awk '{for(i=1;i<=NF;i++)sub(/./,toupper(substr($i,1,1)),$i)}1')
+        title=$(format_branch_title "$branch")
       fi
       
       # Ensure PR_DESCRIPTION.md exists
@@ -87,7 +96,7 @@ if git push "$@"; then
       
       # Determine labels based on branch type
       labels=""
-      if echo "$branch" | grep -qE "^feature/"; then
+      if echo "$branch" | grep -qE "^feat/"; then
         labels="enhancement"
       elif echo "$branch" | grep -qE "^fix/"; then
         labels="bug"

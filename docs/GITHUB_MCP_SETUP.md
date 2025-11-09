@@ -86,7 +86,7 @@ Once configured, you can use natural language commands in Cursor:
 ### Code Operations
 - "Show me the diff for the last commit"
 - "What files changed in the last 3 commits?"
-- "Compare main branch with feature/user-auth"
+- "Compare main branch with feat/auth-add-mcp-endpoints"
 
 ## Integration with Existing Workflow
 
