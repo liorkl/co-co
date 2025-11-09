@@ -1,26 +1,38 @@
 #!/bin/sh
-# Prefill commit messages based on branch naming convention.
+# Guardrails: block commits on protected branches and prefill messages from branch names.
 
 set -eu
 
 COMMIT_MSG_FILE="$1"
 COMMIT_SOURCE="${2:-}"
 
-# Skip for merge, squash, or rebase commits that already have templates
+BRANCH="$(git branch --show-current 2>/dev/null || printf '')"
+MAIN_BRANCH="main"
+DEVELOP_BRANCH="develop"
+
+# Block commits directly on protected branches (unless explicitly overridden)
+if [ "${ALLOW_PROTECTED_BRANCH_COMMIT:-0}" != "1" ]; then
+  if [ "$BRANCH" = "$MAIN_BRANCH" ] || [ "$BRANCH" = "$DEVELOP_BRANCH" ]; then
+    echo "❌ Commits directly on '$BRANCH' are blocked by repository guardrails."
+    echo "   Create a feature branch and commit there instead."
+    echo "   Override once with: ALLOW_PROTECTED_BRANCH_COMMIT=1 git commit ..."
+    exit 1
+  fi
+fi
+
+# Skip prefill for merge/squash/rebase commits that already have messages
 case "$COMMIT_SOURCE" in
   merge|squash|commit)
     exit 0
     ;;
 esac
 
-# Only act if commit message is empty / whitespace
+# Only prefill if commit message is empty / whitespace
 if [ -s "$COMMIT_MSG_FILE" ]; then
   if [ -n "$(tr -d '[:space:]' < "$COMMIT_MSG_FILE")" ]; then
     exit 0
   fi
 fi
-
-BRANCH="$(git branch --show-current 2>/dev/null || printf '')"
 
 BRANCH_PATTERN='^(feat|fix|chore|docs|refactor|test)/[a-z0-9]+(-[a-z0-9]+){2,}$'
 if ! printf "%s" "$BRANCH" | grep -Eq "$BRANCH_PATTERN"; then
@@ -33,5 +45,4 @@ TYPE_LOWER=$(printf "%s" "$TYPE_PART" | tr '[:upper:]' '[:lower:]')
 REST_MESSAGE=$(printf "%s" "$REST_PART" | tr '-' ' ')
 
 printf "%s: %s\n" "$TYPE_LOWER" "$REST_MESSAGE" > "$COMMIT_MSG_FILE"
-
 
