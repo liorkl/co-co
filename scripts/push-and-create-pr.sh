@@ -14,6 +14,22 @@ if [ "$CURRENT_BRANCH" = "$BASE_BRANCH" ] || [ "$CURRENT_BRANCH" = "develop" ]; 
   exit 1
 fi
 
+# Ensure we're up-to-date with the latest base branch before proceeding
+if git remote get-url "$REMOTE" >/dev/null 2>&1; then
+  echo "🔄 Refreshing '$REMOTE/$BASE_BRANCH'..."
+  if git fetch "$REMOTE" "$BASE_BRANCH" --quiet; then
+    if ! git merge-base --is-ancestor "$REMOTE/$BASE_BRANCH" "$CURRENT_BRANCH"; then
+      echo "❌ Branch '$CURRENT_BRANCH' is missing the latest commits from '$REMOTE/$BASE_BRANCH'."
+      echo "   Rebase or merge the latest '$BASE_BRANCH' before pushing:"
+      echo "     git fetch $REMOTE $BASE_BRANCH"
+      echo "     git rebase $REMOTE/$BASE_BRANCH"
+      exit 1
+    fi
+  else
+    echo "⚠️  Unable to fetch '$REMOTE/$BASE_BRANCH'; continuing without freshness check."
+  fi
+fi
+
 # Check if GitHub CLI is installed
 if ! command -v gh >/dev/null 2>&1; then
   echo "❌ GitHub CLI (gh) is not installed"

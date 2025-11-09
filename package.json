@@ -27,6 +27,7 @@
     "pr:create": "./scripts/push-and-create-pr.sh",
     "pr:cursor": "./scripts/prepare-for-cursor-pr.sh",
     "push": "./scripts/git-push-with-pr.sh",
+    "branch:new": "./scripts/git-new-branch.sh",
     "setup:hooks": "./scripts/setup-git-hooks.sh",
     "github:labels": "./scripts/github-api-helper.sh list-labels",
     "github:setup-labels": "./scripts/github-api-helper.sh setup-labels",

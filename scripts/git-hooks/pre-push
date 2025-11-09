@@ -22,6 +22,28 @@ if [ "$BRANCH" = "$MAIN_BRANCH" ] || [ "$BRANCH" = "$DEVELOP_BRANCH" ]; then
   fi
 fi
 
+# Ensure branch includes the latest main changes before pushing
+if [ "${SKIP_MAIN_SYNC_CHECK:-0}" != "1" ]; then
+  MAIN_SYNC_REMOTE="${GIT_MAIN_SYNC_REMOTE:-origin}"
+  MAIN_SYNC_TARGET="${GIT_MAIN_SYNC_TARGET:-$MAIN_BRANCH}"
+
+  if git remote get-url "$MAIN_SYNC_REMOTE" >/dev/null 2>&1; then
+    echo "🔄 Refreshing '$MAIN_SYNC_REMOTE/$MAIN_SYNC_TARGET'..."
+    if git fetch "$MAIN_SYNC_REMOTE" "$MAIN_SYNC_TARGET" --quiet; then
+      if ! git merge-base --is-ancestor "$MAIN_SYNC_REMOTE/$MAIN_SYNC_TARGET" HEAD; then
+        echo "❌ Branch '$BRANCH' is missing the latest commits from '$MAIN_SYNC_REMOTE/$MAIN_SYNC_TARGET'."
+        echo "   Rebase or merge the latest '$MAIN_SYNC_TARGET' before pushing:"
+        echo "     git fetch $MAIN_SYNC_REMOTE $MAIN_SYNC_TARGET"
+        echo "     git rebase $MAIN_SYNC_REMOTE/$MAIN_SYNC_TARGET"
+        echo "   Override once with SKIP_MAIN_SYNC_CHECK=1 (not recommended)."
+        exit 1
+      fi
+    else
+      echo "⚠️  Unable to fetch '$MAIN_SYNC_REMOTE/$MAIN_SYNC_TARGET'; skipping freshness check."
+    fi
+  fi
+fi
+
 # Run verification steps unless explicitly skipped
 if [ "${SKIP_PRE_PUSH_CHECKS:-0}" != "1" ]; then
   if command -v npm >/dev/null 2>&1; then
