@@ -143,7 +143,8 @@ npx tsc --noEmit
 ### Pre-push Guardrails
 - Direct pushes to `main` or `develop` are blocked by default. Create a feature branch and open a PR instead.
 - Every push automatically runs `npm run lint`, `npx tsc --noEmit`, and `npm run test:unit` (if defined). Fix failures before reattempting.
-- To override once (not recommended), set `SKIP_PRE_PUSH_CHECKS=1` to skip checks or `ALLOW_PROTECTED_BRANCH_PUSH=1` to push to a protected branch.
+- The hook fetches `origin/main` and blocks the push if your branch is missing the latest commits. Rebase/merge first, or set `SKIP_MAIN_SYNC_CHECK=1` to override once (not recommended).
+- To skip the other checks once, set `SKIP_PRE_PUSH_CHECKS=1`. To push to a protected branch, set `ALLOW_PROTECTED_BRANCH_PUSH=1`.
 - Hooks install automatically via `npm install`. Reinstall manually with `npm run setup:hooks`.
 
 ### Multi-Agent / Parallel Workflow
@@ -153,6 +154,10 @@ When several developers or Cursor agents work simultaneously, follow this branch
    ```bash
    git checkout main
    git pull --ff-only
+   ```
+   Or use the helper to refresh & create a branch in one step:
+   ```bash
+   npm run branch:new -- feature/short-description
    ```
 2. **Create or resume a feature branch per task**
    ```bash
