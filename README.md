@@ -104,6 +104,41 @@ The migration will attempt to enable it automatically, but you may need to run i
 - `npm run test:signin <email>` - Create test session for development
 - `npm run verify:neon` - Verify Neon database connection
 - `npm run test:email` - Send test email via Resend
+- `npm run github:mcp:setup` - Configure Cursor to use GitHub MCP tools
+- `npm run github:copilot:setup` - Verify the standalone Copilot CLI is installed and authenticated
+
+## Git & GitHub Workflow
+
+1. **Authenticate GitHub CLI**
+   ```bash
+   gh auth login
+   ```
+   Enables the helper scripts (`npm run push`, `scripts/github-api-helper.sh`, etc.).
+
+2. **Install Git Hooks**
+   ```bash
+   npm run setup:hooks
+   ```
+   Installs the `pre-push` hook that keeps `PR_DESCRIPTION.md` current.
+   (Runs automatically after `npm install`; set `SKIP_SETUP_HOOKS=1` to opt out.)
+   ```bash
+   npm run hooks:status   # See whether the managed hook is installed
+   ```
+
+3. **Push Branches with Automation**
+   ```bash
+   npm run push
+   ```
+   Regenerates the PR description, pushes your feature branch, creates/opens the PR, and applies labels automatically.
+
+4. **Optional: Auto Assign Reviewers**
+   Set `GITHUB_AUTO_REVIEWER` in your shell or `.env.local` (see `docs/GITHUB_AUTO_REVIEWER.md`) before running `npm run push`.
+
+5. **Optional: Enable GitHub MCP in Cursor**
+   ```bash
+   npm run github:mcp:setup
+   ```
+   Writes `~/.cursor/mcp.json` so Cursor can run GitHub operations via natural language; restart Cursor afterward.
 
 ## Development
 

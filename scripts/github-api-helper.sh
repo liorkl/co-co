@@ -4,14 +4,71 @@
 
 set -e
 
-REPO_OWNER="${GITHUB_REPOSITORY_OWNER:-liorkl}"
-REPO_NAME="${GITHUB_REPOSITORY_NAME:-co-co}"
-
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
+
+# Detect repository owner/name from git remote if not provided
+detect_repo_from_remote() {
+  local remote="${GITHUB_REMOTE:-origin}"
+  local remote_url
+
+  if ! command -v git >/dev/null 2>&1; then
+    return 1
+  fi
+
+  remote_url=$(git remote get-url "$remote" 2>/dev/null || git remote get-url origin 2>/dev/null)
+  if [ -z "$remote_url" ]; then
+    return 1
+  fi
+
+  # Normalize URL (supports SSH and HTTPS)
+  case "$remote_url" in
+    git@*)
+      remote_url=${remote_url#git@}
+      remote_url=${remote_url/:/\/}
+      ;;
+    ssh://git@*)
+      remote_url=${remote_url#ssh://}
+      remote_url=${remote_url#git@}
+      ;;
+    https://* | http://*)
+      remote_url=${remote_url#https://}
+      remote_url=${remote_url#http://}
+      ;;
+  esac
+
+  # Strip trailing .git if present
+  remote_url=${remote_url%.git}
+
+  # Expect format github.com/owner/repo
+  local path=${remote_url#*/}
+  local owner=${path%%/*}
+  local repo=${path#*/}
+
+  if [ -n "$owner" ] && [ -n "$repo" ] && [ "$owner" != "$repo" ]; then
+    echo "$owner" "$repo"
+    return 0
+  fi
+
+  return 1
+}
+
+if repo_info=$(detect_repo_from_remote); then
+  REPO_OWNER="${GITHUB_REPOSITORY_OWNER:-$(echo "$repo_info" | awk '{print $1}')}"
+  REPO_NAME="${GITHUB_REPOSITORY_NAME:-$(echo "$repo_info" | awk '{print $2}')}"
+else
+  REPO_OWNER="${GITHUB_REPOSITORY_OWNER:-}"
+  REPO_NAME="${GITHUB_REPOSITORY_NAME:-}"
+fi
+
+if [ -z "$REPO_OWNER" ] || [ -z "$REPO_NAME" ]; then
+  echo -e "${RED}❌ Could not determine repository owner/name.${NC}"
+  echo "   Set environment variables GITHUB_REPOSITORY_OWNER and GITHUB_REPOSITORY_NAME."
+  exit 1
+fi
 
 # Check if GitHub CLI is available
 if ! command -v gh >/dev/null 2>&1; then
@@ -20,11 +77,20 @@ if ! command -v gh >/dev/null 2>&1; then
   exit 1
 fi
 
-# Check authentication
+# Check authentication (attempt interactive login if possible)
 if ! gh auth status >/dev/null 2>&1; then
-  echo -e "${RED}❌ Not authenticated with GitHub CLI${NC}"
-  echo "   Run: gh auth login"
-  exit 1
+  echo -e "${YELLOW}⚠️  GitHub CLI is not authenticated or token is invalid.${NC}"
+  if [ -t 1 ] && [ -z "${CI:-}" ]; then
+    echo -e "${BLUE}🔐 Launching gh auth login...${NC}"
+    gh auth login
+    if ! gh auth status >/dev/null 2>&1; then
+      echo -e "${RED}❌ Authentication still failing. Please run 'gh auth login' manually.${NC}"
+      exit 1
+    fi
+  else
+    echo "   Run: gh auth login"
+    exit 1
+  fi
 fi
 
 # Function to get PR number from branch

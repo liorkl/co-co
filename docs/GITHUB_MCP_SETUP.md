@@ -181,6 +181,8 @@ If you prefer to run a local server (requires Docker):
    chmod 600 ~/.cursor/mcp.json
    ```
 
+> **Reminder**: Keep MCP configuration files (like `~/.cursor/mcp.json`) outside this repository. Storing them in the workspace risks accidentally committing secrets. The setup scripts already write them to your home directory.
+
 ## Resources
 
 - [GitHub MCP Server Repository](https://github.com/github/github-mcp-server)
