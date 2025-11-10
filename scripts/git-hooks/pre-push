@@ -80,6 +80,17 @@ if [ "${SKIP_PRE_PUSH_CHECKS:-0}" != "1" ]; then
       echo "❌ Unit tests failed. Fix issues before pushing."
       exit 1
     fi
+
+    if [ "${SKIP_E2E_SMOKE_CHECK:-0}" != "1" ]; then
+      echo "🎭 Running local e2e smoke test..."
+      if ! npm run --if-present test:e2e:smoke; then
+        echo "❌ E2E smoke test failed. Fix issues before pushing."
+        echo "   Override once with SKIP_E2E_SMOKE_CHECK=1 (not recommended)."
+        exit 1
+      fi
+    else
+      echo "⏭️  Skipping e2e smoke test (SKIP_E2E_SMOKE_CHECK=1)."
+    fi
   else
     echo "⚠️  npm not found; skipping automated lint/type/test checks."
   fi

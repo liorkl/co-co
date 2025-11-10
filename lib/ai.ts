@@ -1,6 +1,7 @@
 import OpenAI from "openai";
 
-const client = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+const openAIApiKey = process.env.OPENAI_API_KEY;
+const client = openAIApiKey ? new OpenAI({ apiKey: openAIApiKey }) : null;
 
 export async function summarizeProfile(input: {
   role: "CEO" | "CTO";
@@ -11,6 +12,10 @@ export async function summarizeProfile(input: {
     input.structured
   )} NOTE=${input.freeText ?? ""}`;
   try {
+    if (!client) {
+      console.warn("🧪 OPENAI_API_KEY not configured; returning empty summary.");
+      return "";
+    }
     const completion = await client.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
@@ -27,6 +32,10 @@ export async function summarizeProfile(input: {
 
 export async function buildMatchRationale(ceoSummary: string, ctoSummary: string): Promise<string> {
   try {
+    if (!client) {
+      console.warn("🧪 OPENAI_API_KEY not configured; skipping match rationale generation.");
+      return "";
+    }
     const completion = await client.chat.completions.create({
       model: "gpt-4o-mini",
       messages: [
