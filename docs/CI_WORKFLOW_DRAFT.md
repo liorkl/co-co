@@ -19,18 +19,24 @@
   4. `npx tsc --noEmit`
   5. `npm run test:unit`
   6. `npm run test:integration`
+  7. `npx playwright install --with-deps`
+  8. `npm run build`
+  9. `npm run test:e2e:smoke:nobuild` (reuses the freshly built bundle, starts the server on `127.0.0.1:3310`, waits for readiness, runs Playwright, and tears down automatically)
+
+#### Future Enhancements
+- Consider introducing a build matrix (e.g., Node versions or operating systems) and gating the Playwright smoke step so it executes only on the primary environment. This keeps coverage while controlling runtime.
 
 ### 3. Required Secrets
 
 - `TEST_DATABASE_URL`  
-  Connection string to the dedicated Neon test branch (or local Postgres). Used by integration tests and Prisma during CI.
+  Connection string to the dedicated Neon test branch (or local Postgres). Used by integration tests and Prisma during CI. Falls back to `DATABASE_URL`, which itself falls back to a dummy local connection if no secrets are configured.
   - Prefer the **direct Neon endpoint (without `-pooler`)** so Prisma’s schema sync can run DDL statements. Your application runtime can still use the pooled host for `DATABASE_URL`.
 
 - `DATABASE_URL` (optional if `TEST_DATABASE_URL` covers all tests)  
   Some scripts default to `DATABASE_URL`; set it to the same test DB to be safe.
 
-- `NEXTAUTH_SECRET`  
-  Needed if authentication-related code executes during integration tests or future e2e runs. Use a randomly generated value (e.g., `openssl rand -base64 32`).
+- `NEXTAUTH_SECRET` / `AUTH_SECRET`  
+  Currently defaulted to `local-ci-secret` when unset so the smoke test can run without storing secrets in GitHub. Still supply a real secret (e.g., `openssl rand -base64 32`) in production or when mirroring deployed behaviour.
 
 - `RESEND_API_KEY` (optional)  
   Only required when tests invoke email flows. If omitted, ensure email-sending code is mocked.

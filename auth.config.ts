@@ -5,7 +5,7 @@ import { Resend } from "resend";
 
 import { prisma } from "@/lib/db";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
 export const authConfig: NextAuthConfig = {
   adapter: PrismaAdapter(prisma),
@@ -62,6 +62,11 @@ export const authConfig: NextAuthConfig = {
             apiKeyPrefix: process.env.RESEND_API_KEY?.substring(0, 10),
             nextAuthUrl: process.env.NEXTAUTH_URL,
           });
+
+          if (!resend) {
+            console.warn("📪 RESEND_API_KEY not configured; skipping email send (likely running in CI or local test).");
+            return;
+          }
 
           const result = await resend.emails.send({
             from,
@@ -142,7 +147,7 @@ export const authConfig: NextAuthConfig = {
     },
   },
   session: { strategy: "jwt" },
-  secret: process.env.NEXTAUTH_SECRET,
+  secret: process.env.NEXTAUTH_SECRET ?? "local-dev-secret",
   debug: process.env.NODE_ENV === "development",
   trustHost: true,
 };
