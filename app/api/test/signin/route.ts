@@ -1,7 +1,6 @@
-import { signIn } from "@/auth";
 import { prisma } from "@/lib/db";
 import { NextResponse } from "next/server";
-import { createHash } from "crypto";
+import { createHash, randomBytes } from "crypto";
 
 /**
  * Test endpoint to directly sign in as a test user
@@ -38,95 +37,39 @@ export async function GET(request: Request) {
     );
   }
 
-  try {
-    // Use NextAuth's signIn function to generate a proper token
-    // This will create the token in the correct format
-    const result = await signIn("email", { 
-      email, 
-      redirect: false 
-    });
+  const token = randomBytes(32).toString("hex");
+  const secret = process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET ?? "local-dev-secret";
+  const hashedToken = secret
+    ? createHash("sha256").update(`${token}${secret}`).digest("hex")
+    : token;
+  const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
-    // The signIn function creates the token, but we need to get it
-    // Let's query the database for the token that was just created
-    const tokenRecord = await prisma.verificationToken.findFirst({
-      where: { 
-        identifier: email,
-        expires: { gt: new Date() }
-      },
-      orderBy: { expires: 'desc' }
-    });
+  await prisma.verificationToken.deleteMany({
+    where: { identifier: email },
+  });
 
-    if (!tokenRecord) {
-      // If no token was created, create one manually
-      // NextAuth v5 may hash tokens, so let's try a different approach
-      // Actually, let's just trigger signIn and it will create the token
-      // Then we'll generate the callback URL
-      
-      // Generate the callback URL - NextAuth will handle token validation
-      // The format should be: /api/auth/callback/email?email=...&token=...
-      // But we need the actual token from the database
-      
-      return NextResponse.json({
-        error: "Token not created. Please try requesting a magic link normally first.",
-        hint: "NextAuth may need to generate the token through the normal flow."
-      }, { status: 500 });
-    }
+  await prisma.verificationToken.create({
+    data: {
+      identifier: email,
+      token: hashedToken,
+      expires,
+    },
+  });
 
-    // Generate the callback URL
-    const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
-    const callbackUrl = `${baseUrl}/api/auth/callback/email?email=${encodeURIComponent(email)}&token=${tokenRecord.token}`;
+  const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
+  const callbackUrl = `${baseUrl}/api/auth/callback/email?email=${encodeURIComponent(
+    email
+  )}&token=${token}`;
 
-    return NextResponse.json({
-      success: true,
-      email: email,
-      user: {
-        role: user.role,
-        onboarded: user.onboarded,
-      },
-      magicLink: callbackUrl,
-      message: "Open the magicLink URL in your browser to sign in",
-    });
-  } catch (error: any) {
-    console.error("Error creating test session:", error);
-    
-    // Fallback: Create token manually and hope it works
-    try {
-      const crypto = require("crypto");
-      const token = crypto.randomBytes(32).toString("hex");
-      const expires = new Date(Date.now() + 24 * 60 * 60 * 1000);
-
-      await prisma.verificationToken.deleteMany({
-        where: { identifier: email }
-      });
-
-      await prisma.verificationToken.create({
-        data: {
-          identifier: email,
-          token: token,
-          expires: expires,
-        }
-      });
-
-      const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
-      const callbackUrl = `${baseUrl}/api/auth/callback/email?email=${encodeURIComponent(email)}&token=${token}`;
-
-      return NextResponse.json({
-        success: true,
-        email: email,
-        user: {
-          role: user.role,
-          onboarded: user.onboarded,
-        },
-        magicLink: callbackUrl,
-        message: "Open the magicLink URL in your browser to sign in",
-        warning: "Token created manually - if it doesn't work, NextAuth may require hashed tokens"
-      });
-    } catch (fallbackError: any) {
-      return NextResponse.json(
-        { error: fallbackError.message || "Failed to create session" },
-        { status: 500 }
-      );
-    }
-  }
+  return NextResponse.json({
+    success: true,
+    email,
+    user: {
+      role: user.role,
+      onboarded: user.onboarded,
+    },
+    magicLink: callbackUrl,
+    message: "Open the magicLink URL in your browser to sign in",
+  });
 }
 
