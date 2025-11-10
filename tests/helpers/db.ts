@@ -20,6 +20,7 @@ type TestDbContext = {
 };
 
 let context: TestDbContext | null = null;
+let contextPromise: Promise<TestDbContext> | null = null;
 
 function ensureTestDatabaseUrl(): { baseUrl: string; urlWithSchema: string; schema: string } {
   const baseUrl = process.env.TEST_DATABASE_URL ?? process.env.DATABASE_URL;
@@ -47,39 +48,42 @@ export async function setupTestDatabase(): Promise<TestDbContext> {
   if (context) {
     return context;
   }
+  if (contextPromise) {
+    return contextPromise;
+  }
 
-  const { baseUrl, urlWithSchema, schema } = ensureTestDatabaseUrl();
+  contextPromise = (async () => {
+    const { baseUrl, urlWithSchema, schema } = ensureTestDatabaseUrl();
 
-  const adminClient = new PrismaClient({
-    datasources: { db: { url: baseUrl } },
-  });
-  await createSchema(adminClient, schema);
-  await adminClient.$disconnect();
+    const adminClient = new PrismaClient({
+      datasources: { db: { url: baseUrl } },
+    });
+    await createSchema(adminClient, schema);
+    await adminClient.$disconnect();
 
-  // Run migrations against the isolated schema
-  execSync("npx prisma migrate deploy", {
-    stdio: "inherit",
-    env: {
-      ...process.env,
-      DATABASE_URL: urlWithSchema,
-    },
-  });
+    // Ensure the schema matches the latest Prisma model definitions.
+    execSync("npx prisma db push --skip-generate --accept-data-loss", {
+      stdio: "inherit",
+      env: {
+        ...process.env,
+        DATABASE_URL: urlWithSchema,
+        PRISMA_MIGRATE_NO_ADVISORY_LOCK: "1",
+      },
+    });
 
-  // Ensure the schema matches the latest Prisma model definitions even if no migrations exist yet.
-  execSync("npx prisma db push --skip-generate", {
-    stdio: "inherit",
-    env: {
-      ...process.env,
-      DATABASE_URL: urlWithSchema,
-    },
-  });
+    const prisma = new PrismaClient({
+      datasources: { db: { url: urlWithSchema } },
+    });
 
-  const prisma = new PrismaClient({
-    datasources: { db: { url: urlWithSchema } },
-  });
+    context = { prisma, schema };
+    return context;
+  })();
 
-  context = { prisma, schema };
-  return context;
+  try {
+    return await contextPromise;
+  } finally {
+    contextPromise = null;
+  }
 }
 
 export async function teardownTestDatabase() {
