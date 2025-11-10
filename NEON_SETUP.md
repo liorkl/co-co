@@ -57,7 +57,16 @@
      DATABASE_URL="postgresql://user:password@ep-xxx-xxx.region.aws.neon.tech/neondb?sslmode=require&schema=public"
      ```
 
-2. **Verify pgvector is enabled:**
+2. **(Recommended) Create a dedicated test branch/database:**
+   - In the Neon dashboard, go to **Branches → New branch** and name it `tests` (or similar).
+   - Copy the connection string for that branch.
+   - Update `.env.test.local` (create from `env.test.example`) with:
+     ```env
+     TEST_DATABASE_URL="postgresql://user:password@ep-xxx-xxx.region.aws.neon.tech/neondb?sslmode=require&schema=public"
+     ```
+   - The integration tests will create isolated schemas on this branch and tear them down automatically.
+
+3. **Verify pgvector is enabled:**
    - Neon comes with pgvector pre-installed
    - Your migration will enable it automatically
 

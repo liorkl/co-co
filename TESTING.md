@@ -56,6 +56,11 @@ npx prisma studio
 
 ## Debugging Tips
 
+### Configure Integration Tests
+- Copy `env.test.example` to `.env.test.local` and update `TEST_DATABASE_URL` with a database/branch safe for destructive resets.
+- The integration suite automatically creates and drops isolated schemas, but it needs credentials with permission to create schemas.
+- If `TEST_DATABASE_URL` is not provided, the tests fall back to `DATABASE_URL`; ensure this points to a non-production database before running `npm run test:integration`.
+
 ### Check Terminal Logs
 Look for these log messages:
 - `📧 Attempting to send email:` - Email sending started
