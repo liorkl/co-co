@@ -62,6 +62,15 @@ npx prisma studio
 - If `TEST_DATABASE_URL` is not provided, the tests fall back to `DATABASE_URL`; ensure this points to a non-production database before running `npm run test:integration`.
 - Use the **direct Neon endpoint (without the `-pooler` suffix)** for `TEST_DATABASE_URL`. Prisma sync commands issue DDL statements that require a persistent connection; the PgBouncer pooler in transaction mode will block those operations and cause errors. The app can continue using the pooled host in `.env.local`.
 
+### Run the Playwright Smoke Test Locally
+- Use the preconfigured harness to reproduce the CI smoke step:
+  ```bash
+  npm run test:e2e:smoke
+  ```
+  This script builds the production bundle, starts `npm run start` on `127.0.0.1:3310`, waits for readiness with `wait-on`, and executes the Playwright landing-page smoke spec with `PLAYWRIGHT_BASE_URL` set automatically. The process is cleaned up for you via shell traps.
+- To skip it temporarily (not recommended), export `SKIP_E2E_SMOKE_CHECK=1`. The pre-push hook respects the same variable.
+
+
 ### Check Terminal Logs
 Look for these log messages:
 - `📧 Attempting to send email:` - Email sending started
