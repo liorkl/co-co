@@ -24,6 +24,7 @@
 
 - `TEST_DATABASE_URL`  
   Connection string to the dedicated Neon test branch (or local Postgres). Used by integration tests and Prisma during CI.
+  - Prefer the **direct Neon endpoint (without `-pooler`)** so Prisma’s schema sync can run DDL statements. Your application runtime can still use the pooled host for `DATABASE_URL`.
 
 - `DATABASE_URL` (optional if `TEST_DATABASE_URL` covers all tests)  
   Some scripts default to `DATABASE_URL`; set it to the same test DB to be safe.

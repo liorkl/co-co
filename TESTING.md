@@ -60,6 +60,7 @@ npx prisma studio
 - Copy `env.test.example` to `.env.test.local` and update `TEST_DATABASE_URL` with a database/branch safe for destructive resets.
 - The integration suite automatically creates and drops isolated schemas, but it needs credentials with permission to create schemas.
 - If `TEST_DATABASE_URL` is not provided, the tests fall back to `DATABASE_URL`; ensure this points to a non-production database before running `npm run test:integration`.
+- Use the **direct Neon endpoint (without the `-pooler` suffix)** for `TEST_DATABASE_URL`. Prisma sync commands issue DDL statements that require a persistent connection; the PgBouncer pooler in transaction mode will block those operations and cause errors. The app can continue using the pooled host in `.env.local`.
 
 ### Check Terminal Logs
 Look for these log messages:
