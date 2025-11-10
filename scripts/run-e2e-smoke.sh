@@ -23,12 +23,34 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM
 
-HOST="${PLAYWRIGHT_SMOKE_HOST:-127.0.0.1}"
+HOST="${PLAYWRIGHT_SMOKE_HOST:-localhost}"
 PORT="${PLAYWRIGHT_SMOKE_PORT:-3310}"
 BASE_URL="http://$HOST:$PORT"
 
+DEFAULT_DB_URL="postgresql://postgres:postgres@localhost:5432/founderfinder_test?schema=public"
+
+if [ -z "${TEST_DATABASE_URL:-}" ] && [ -z "${DATABASE_URL:-}" ]; then
+  if [ "${ALLOW_E2E_FALLBACK_DB:-0}" = "1" ]; then
+    DB_URL="$DEFAULT_DB_URL"
+    echo "ℹ️  Using fallback DATABASE_URL for e2e smoke: $DB_URL"
+  else
+    echo "❌ TEST_DATABASE_URL or DATABASE_URL must be set for e2e smoke tests."
+    echo "   (set ALLOW_E2E_FALLBACK_DB=1 to use the local fallback $DEFAULT_DB_URL)"
+    exit 1
+  fi
+else
+  DB_URL="${TEST_DATABASE_URL:-${DATABASE_URL:-}}"
+fi
+
+export DATABASE_URL="$DB_URL"
+export TEST_DATABASE_URL="$DB_URL"
+export PRISMA_MIGRATE_NO_ADVISORY_LOCK=1
+
+echo "🗄️  Syncing Prisma schema to test database..."
+npx prisma db push --skip-generate --accept-data-loss >/dev/null
+
 echo "🚀 Starting Next.js server on ${BASE_URL}..."
-npm run start -- --hostname "$HOST" --port "$PORT" >/dev/null &
+NEXTAUTH_URL="$BASE_URL" OPENAI_API_KEY="" RESEND_API_KEY="" DATABASE_URL="${DATABASE_URL:-}" TEST_DATABASE_URL="${TEST_DATABASE_URL:-}" npm run start -- --hostname "$HOST" --port "$PORT" >/dev/null &
 NEXT_SERVER_PID=$!
 
 echo "⏳ Waiting for server readiness..."
@@ -43,7 +65,7 @@ if ! kill -0 "$NEXT_SERVER_PID" 2>/dev/null; then
 fi
 
 echo "🎭 Running Playwright smoke suite..."
-PLAYWRIGHT_BASE_URL="$BASE_URL" npm run test:e2e
+PLAYWRIGHT_BASE_URL="$BASE_URL" NEXTAUTH_URL="$BASE_URL" OPENAI_API_KEY="" RESEND_API_KEY="" DATABASE_URL="${DATABASE_URL:-}" TEST_DATABASE_URL="${TEST_DATABASE_URL:-}" npm run test:e2e
 
 echo "✅ Smoke test completed."
 
