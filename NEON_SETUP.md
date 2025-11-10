@@ -65,6 +65,7 @@
      TEST_DATABASE_URL="postgresql://user:password@ep-xxx-xxx.region.aws.neon.tech/neondb?sslmode=require&schema=public"
      ```
    - The integration tests will create isolated schemas on this branch and tear them down automatically.
+   - **Important:** Use the direct endpoint host (no `-pooler` suffix) for `TEST_DATABASE_URL`. Prisma’s schema sync runs DDL statements that are incompatible with Neon’s transaction pooler, while your application runtime can continue to point `DATABASE_URL` at the pooled endpoint.
 
 3. **Verify pgvector is enabled:**
    - Neon comes with pgvector pre-installed
