@@ -19,6 +19,13 @@ export default defineConfig({
     css: false,
     include: ["tests/**/*.{test,spec}.{ts,tsx}"],
     exclude: ["tests/e2e/**"],
+    pool: "threads",
+    poolOptions: {
+      threads: {
+        maxThreads: 1,
+        minThreads: 1,
+      },
+    },
     coverage: {
       provider: "v8",
       reportsDirectory: path.resolve(__dirname, "coverage"),
