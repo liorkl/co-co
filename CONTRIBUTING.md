@@ -143,6 +143,7 @@ npx tsc --noEmit
 ### Pre-push Guardrails
 - Direct pushes to `main` or `develop` are blocked by default. Create a feature branch and open a PR instead.
 - Every push automatically runs `npm run lint`, `npx tsc --noEmit`, and `npm run test:unit` (if defined). Fix failures before reattempting.
+- The hook now also executes the Playwright smoke harness via `npm run test:e2e:smoke`, which builds the app, boots a production server on `127.0.0.1:3310`, and verifies the landing page. Override once with `SKIP_E2E_SMOKE_CHECK=1` if you're in an emergency where the smoke test is temporarily unstable (not recommended).
 - The hook fetches `origin/main` and blocks the push if your branch is missing the latest commits. Rebase/merge first, or set `SKIP_MAIN_SYNC_CHECK=1` to override once (not recommended).
 - Branch names must follow `<type>/<scope>-<objective>-<detail>` (e.g. `fix/auth-magic-link-email-copy`). Override once with `SKIP_BRANCH_NAME_CHECK=1` if you really must (not recommended).
 - To skip the other checks once, set `SKIP_PRE_PUSH_CHECKS=1`. To push to a protected branch, set `ALLOW_PROTECTED_BRANCH_PUSH=1`.
