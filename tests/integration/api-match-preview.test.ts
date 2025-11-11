@@ -90,54 +90,66 @@ describeIfDatabaseConfigured("POST /api/match/preview", () => {
 
   it("returns enriched matches with rationale and profile details", async () => {
     const prisma = getTestPrismaClient();
-    const ceo = await prisma.user.create({
-      data: { email: "ceo@example.com", role: "CEO" },
-    });
-    await prisma.profileSummary.create({
-      data: { userId: ceo.id, ai_summary_text: "CEO summary" },
-    });
-
-    const cto1 = await prisma.user.create({
-      data: {
-        email: "cto1@example.com",
-        role: "CTO",
-        profile: {
-          create: { name: "CTO One", location: "NYC", timezone: "EST", availability: "Full-time", commitment: "High" },
-        },
-        techBackground: {
-          create: {
-            primary_stack: "React",
-            years_experience: 7,
-            domains: "SaaS",
-            track_record: "Built SaaS platforms",
+    const [ceo, cto1, cto2] = await prisma.$transaction([
+      prisma.user.create({
+        data: {
+          email: "ceo@example.com",
+          role: "CEO",
+          profileSummary: {
+            create: { ai_summary_text: "CEO summary" },
           },
         },
-      },
-    });
-    await prisma.profileSummary.create({
-      data: { userId: cto1.id, ai_summary_text: "CTO One summary" },
-    });
-
-    const cto2 = await prisma.user.create({
-      data: {
-        email: "cto2@example.com",
-        role: "CTO",
-        profile: {
-          create: { name: "CTO Two", location: "SF" },
-        },
-        techBackground: {
-          create: {
-            primary_stack: "Node.js",
-            years_experience: 5,
-            domains: "FinTech",
-            track_record: "Built payments systems",
+      }),
+      prisma.user.create({
+        data: {
+          email: "cto1@example.com",
+          role: "CTO",
+          profile: {
+            create: {
+              name: "CTO One",
+              location: "NYC",
+              timezone: "EST",
+              availability: "Full-time",
+              commitment: "High",
+            },
+          },
+          techBackground: {
+            create: {
+              primary_stack: "React",
+              years_experience: 7,
+              domains: "SaaS",
+              track_record: "Built SaaS platforms",
+            },
+          },
+          profileSummary: {
+            create: { ai_summary_text: "CTO One summary" },
           },
         },
-      },
-    });
-    await prisma.profileSummary.create({
-      data: { userId: cto2.id, ai_summary_text: "CTO Two summary" },
-    });
+      }),
+      prisma.user.create({
+        data: {
+          email: "cto2@example.com",
+          role: "CTO",
+          profile: {
+            create: {
+              name: "CTO Two",
+              location: "SF",
+            },
+          },
+          techBackground: {
+            create: {
+              primary_stack: "Node.js",
+              years_experience: 5,
+              domains: "FinTech",
+              track_record: "Built payments systems",
+            },
+          },
+          profileSummary: {
+            create: { ai_summary_text: "CTO Two summary" },
+          },
+        },
+      }),
+    ]);
 
     authMock.mockResolvedValue({ userId: ceo.id, role: "CEO" });
     limitMock.mockResolvedValue({ success: true });
