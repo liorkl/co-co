@@ -12,6 +12,8 @@ const describeIfDatabaseConfigured = hasDatabaseUrl ? describe : describe.skip;
 
 const prismaHolder: { prisma: PrismaClient | null } = { prisma: null };
 const authMock = vi.fn();
+const limitMock = vi.fn();
+const findMatchesMock = vi.fn();
 const summarizeMock = vi.fn();
 const upsertEmbeddingMock = vi.fn();
 const buildMatchRationaleMock = vi.fn();
@@ -29,18 +31,24 @@ vi.mock("@/auth", () => ({
   auth: () => authMock(),
 }));
 
+vi.mock("@/lib/rateLimit", () => ({
+  limit: (...args: Parameters<typeof limitMock>) => limitMock(...args),
+}));
+
 vi.mock("@/lib/ai", () => ({
   summarizeProfile: (...args: Parameters<typeof summarizeMock>) => summarizeMock(...args),
   buildMatchRationale: (...args: Parameters<typeof buildMatchRationaleMock>) =>
     buildMatchRationaleMock(...args),
 }));
 
+vi.mock("@/lib/match", () => ({
+  findMatchesFor: (...args: Parameters<typeof findMatchesMock>) => findMatchesMock(...args),
+}));
+
 vi.mock("@/lib/embeddings", () => ({
   upsertEmbedding: (...args: Parameters<typeof upsertEmbeddingMock>) =>
     upsertEmbeddingMock(...args),
 }));
-
-const toVectorBuffer = (values: number[]) => Buffer.from(new Float32Array(values).buffer);
 
 describeIfDatabaseConfigured("Onboarding flow through match preview", () => {
   let submitHandler: typeof import("@/app/api/interview/submit/route").POST;
@@ -55,6 +63,8 @@ describeIfDatabaseConfigured("Onboarding flow through match preview", () => {
 
   afterEach(async () => {
     authMock.mockReset();
+    limitMock.mockReset();
+    findMatchesMock.mockReset();
     summarizeMock.mockReset();
     upsertEmbeddingMock.mockReset();
     buildMatchRationaleMock.mockReset();
@@ -95,15 +105,6 @@ describeIfDatabaseConfigured("Onboarding flow through match preview", () => {
           profileSummary: {
             create: { ai_summary_text: "Experienced CTO ready to partner." },
           },
-          embeddings: {
-            create: [
-              {
-                role: "CTO",
-                source: "summary",
-                vector: toVectorBuffer([0.92, 0.1, 0.05]),
-              },
-            ],
-          },
         },
       }),
       prisma.user.create({
@@ -111,18 +112,11 @@ describeIfDatabaseConfigured("Onboarding flow through match preview", () => {
       }),
     ]);
 
+    limitMock.mockResolvedValue({ success: true });
     summarizeMock.mockResolvedValue("Visionary CEO summary");
     buildMatchRationaleMock.mockResolvedValue("Aligned mission and complementary skills");
-    upsertEmbeddingMock.mockImplementation(async (userId, role, _text, source) => {
-      await prisma.embedding.create({
-        data: {
-          userId,
-          role,
-          source,
-          vector: toVectorBuffer([1, 0.1, 0.05]),
-        },
-      });
-    });
+    upsertEmbeddingMock.mockResolvedValue(undefined);
+    findMatchesMock.mockResolvedValue([{ userId: cto.id, score: 0.95 }]);
 
     authMock.mockResolvedValueOnce({ userId: ceo.id, role: "CEO" });
     const request = new Request("http://localhost/api/interview/submit", {
@@ -155,10 +149,14 @@ describeIfDatabaseConfigured("Onboarding flow through match preview", () => {
     expect(payload.matches[0]).toMatchObject({
       userId: cto.id,
       rationale: "Aligned mission and complementary skills",
-      score: expect.any(Number),
+      score: 0.95,
       name: "CTO Example",
       location: "Remote",
     });
+
+    expect(findMatchesMock).toHaveBeenCalledWith(ceo.id, "CEO");
+    expect(limitMock).toHaveBeenNthCalledWith(1, `interview:${ceo.id}`, "api");
+    expect(limitMock).toHaveBeenNthCalledWith(2, `match:${ceo.id}`, "api");
 
     const ceoRecord = await prisma.user.findUnique({ where: { id: ceo.id } });
     expect(ceoRecord?.onboarded).toBe(true);
