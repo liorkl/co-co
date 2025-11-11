@@ -26,14 +26,18 @@ jobs:
     env:
       NODE_ENV: test
       CI: true
-      DATABASE_URL: ${{ secrets.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/founderfinder_test?schema=public' }}
-      TEST_DATABASE_URL: ${{ secrets.TEST_DATABASE_URL || secrets.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/founderfinder_test?schema=public' }}
-      NEXTAUTH_SECRET: ${{ secrets.NEXTAUTH_SECRET || secrets.AUTH_SECRET || 'local-ci-secret' }}
-      AUTH_SECRET: ${{ secrets.AUTH_SECRET || secrets.NEXTAUTH_SECRET || 'local-ci-secret' }}
-      RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
-      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-      UPSTASH_REDIS_REST_URL: ${{ secrets.UPSTASH_REDIS_REST_URL }}
-      UPSTASH_REDIS_REST_TOKEN: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/founderfinder_test?schema=public
+      TEST_DATABASE_URL: postgresql://postgres:postgres@localhost:5432/founderfinder_test?schema=public
+      PRISMA_MIGRATE_NO_ADVISORY_LOCK: "1"
+      NEXTAUTH_SECRET: local-ci-secret
+      AUTH_SECRET: local-ci-secret
+      RESEND_API_KEY: placeholder-resend-key
+      EMAIL_FROM: "FounderFinder Test <test@example.com>"
+      OPENAI_API_KEY: placeholder-openai-key
+      PLAYWRIGHT_BASE_URL: http://localhost:3310
+      NEXTAUTH_URL: http://localhost:3310
+      PLAYWRIGHT_SMOKE_HOST: localhost
+      PLAYWRIGHT_SMOKE_PORT: "3310"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -47,10 +51,53 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Configure secrets
+        env:
+          DATABASE_URL_SECRET: ${{ secrets.DATABASE_URL }}
+          TEST_DATABASE_URL_SECRET: ${{ secrets.TEST_DATABASE_URL }}
+          NEXTAUTH_SECRET_SECRET: ${{ secrets.NEXTAUTH_SECRET }}
+          AUTH_SECRET_SECRET: ${{ secrets.AUTH_SECRET }}
+          RESEND_API_KEY_SECRET: ${{ secrets.RESEND_API_KEY }}
+          OPENAI_API_KEY_SECRET: ${{ secrets.OPENAI_API_KEY }}
+          UPSTASH_REDIS_REST_URL_SECRET: ${{ secrets.UPSTASH_REDIS_REST_URL }}
+          UPSTASH_REDIS_REST_TOKEN_SECRET: ${{ secrets.UPSTASH_REDIS_REST_TOKEN }}
+        run: |
+          if [ -n "$DATABASE_URL_SECRET" ]; then
+            echo "DATABASE_URL=$DATABASE_URL_SECRET" >> "$GITHUB_ENV"
+          fi
+          if [ -n "$TEST_DATABASE_URL_SECRET" ]; then
+            echo "TEST_DATABASE_URL=$TEST_DATABASE_URL_SECRET" >> "$GITHUB_ENV"
+          elif [ -n "$DATABASE_URL_SECRET" ]; then
+            echo "TEST_DATABASE_URL=$DATABASE_URL_SECRET" >> "$GITHUB_ENV"
+          fi
+          if [ -n "$NEXTAUTH_SECRET_SECRET" ]; then
+            echo "NEXTAUTH_SECRET=$NEXTAUTH_SECRET_SECRET" >> "$GITHUB_ENV"
+          elif [ -n "$AUTH_SECRET_SECRET" ]; then
+            echo "NEXTAUTH_SECRET=$AUTH_SECRET_SECRET" >> "$GITHUB_ENV"
+          fi
+          if [ -n "$AUTH_SECRET_SECRET" ]; then
+            echo "AUTH_SECRET=$AUTH_SECRET_SECRET" >> "$GITHUB_ENV"
+          elif [ -n "$NEXTAUTH_SECRET_SECRET" ]; then
+            echo "AUTH_SECRET=$NEXTAUTH_SECRET_SECRET" >> "$GITHUB_ENV"
+          fi
+          if [ -n "$RESEND_API_KEY_SECRET" ]; then
+            echo "RESEND_API_KEY=$RESEND_API_KEY_SECRET" >> "$GITHUB_ENV"
+          fi
+          if [ -n "$OPENAI_API_KEY_SECRET" ]; then
+            echo "OPENAI_API_KEY=$OPENAI_API_KEY_SECRET" >> "$GITHUB_ENV"
+          fi
+          if [ -n "$UPSTASH_REDIS_REST_URL_SECRET" ]; then
+            echo "UPSTASH_REDIS_REST_URL=$UPSTASH_REDIS_REST_URL_SECRET" >> "$GITHUB_ENV"
+          fi
+          if [ -n "$UPSTASH_REDIS_REST_TOKEN_SECRET" ]; then
+            echo "UPSTASH_REDIS_REST_TOKEN=$UPSTASH_REDIS_REST_TOKEN_SECRET" >> "$GITHUB_ENV"
+          fi
+
       - name: Generate Prisma client
         run: npx prisma generate
-        env:
-          DATABASE_URL: ${{ secrets.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/founderfinder_test?schema=public' }}
+
+      - name: Apply Prisma migrations
+        run: npx prisma migrate deploy
 
       - name: Lint
         run: npm run lint

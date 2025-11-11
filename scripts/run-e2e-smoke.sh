@@ -25,7 +25,16 @@ trap cleanup EXIT INT TERM
 
 HOST="${PLAYWRIGHT_SMOKE_HOST:-localhost}"
 PORT="${PLAYWRIGHT_SMOKE_PORT:-3310}"
-BASE_URL="http://$HOST:$PORT"
+SCHEME="http"
+BASE_URL="$SCHEME://$HOST:$PORT"
+
+if [ -n "${PLAYWRIGHT_BASE_URL:-}" ]; then
+  RAW_URL="$PLAYWRIGHT_BASE_URL"
+  HOST="$(node -e "const u = new URL(process.argv[1]); console.log(u.hostname);" "$RAW_URL")"
+  PORT="$(node -e "const u = new URL(process.argv[1]); console.log(u.port || '3310');" "$RAW_URL")"
+  SCHEME="$(node -e "const u = new URL(process.argv[1]); console.log(u.protocol.replace(':',''));" "$RAW_URL")"
+  BASE_URL="$SCHEME://$HOST:$PORT"
+fi
 
 DEFAULT_DB_URL="postgresql://postgres:postgres@localhost:5432/founderfinder_test?schema=public"
 

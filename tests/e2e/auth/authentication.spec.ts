@@ -6,6 +6,7 @@ import {
   getDatabaseUrl,
 } from "../support/env";
 import { resetPrismaForE2E } from "../support/prisma";
+import { normalizeMagicLink } from "../support/url";
 
 ensurePlaywrightEnv();
 
@@ -63,8 +64,9 @@ test.describe("Authentication flows", () => {
     expect(response.ok()).toBeTruthy();
     const { magicLink } = await response.json();
     expect(magicLink).toBeTruthy();
+    const normalizedLink = normalizeMagicLink(magicLink, BASE_URL);
 
-    await page.goto(magicLink);
+    await page.goto(normalizedLink);
     await page.waitForURL(/\/matches$/, { timeout: 15_000 });
     await expect(page.getByRole("heading", { name: "Your Matches" })).toBeVisible();
 
