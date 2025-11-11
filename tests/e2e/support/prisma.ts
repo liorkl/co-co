@@ -1,19 +1,19 @@
 import { PrismaClient } from "@prisma/client";
 
 export async function resetPrismaForE2E(prisma: PrismaClient) {
-  await prisma.$transaction([
-    prisma.session.deleteMany(),
-    prisma.verificationToken.deleteMany(),
-    prisma.account.deleteMany(),
-    prisma.match.deleteMany(),
-    prisma.embedding.deleteMany(),
-    prisma.profileSummary.deleteMany(),
-    prisma.interviewResponse.deleteMany(),
-    prisma.techBackground.deleteMany(),
-    prisma.startup.deleteMany(),
-    prisma.profile.deleteMany(),
-    prisma.user.deleteMany(),
-  ]);
+  await prisma.$transaction(async (tx) => {
+    await tx.session.deleteMany();
+    await tx.verificationToken.deleteMany();
+    await tx.account.deleteMany();
+    await tx.match.deleteMany();
+    await tx.embedding.deleteMany();
+    await tx.profileSummary.deleteMany();
+    await tx.interviewResponse.deleteMany();
+    await tx.techBackground.deleteMany();
+    await tx.startup.deleteMany();
+    await tx.profile.deleteMany();
+    await tx.user.deleteMany();
+  });
 }
 
 export function toVectorBuffer(values: number[]) {
