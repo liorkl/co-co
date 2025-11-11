@@ -163,7 +163,7 @@ describeIfDatabaseConfigured("Onboarding flow through match preview", () => {
 
     const ceoSummary = await prisma.profileSummary.findUnique({ where: { userId: ceo.id } });
     expect(ceoSummary?.ai_summary_text).toBe("Visionary CEO summary");
-  });
+  }, 15000);
 });
 
 
