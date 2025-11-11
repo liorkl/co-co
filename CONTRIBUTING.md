@@ -18,22 +18,22 @@ Thank you for your interest in contributing! This document provides guidelines a
 ## Git Workflow
 
 ### Branch Naming
-Branches should be descriptive, concise, and self-explanatory. Both humans and AI agents should be able to quickly understand what the branch does and why it exists.
+Branches must tell a short story: **what is changing, for which surface, and why it matters.**
 
-**Format:** `<type>/<what>-<why>`
+**Format:** `<type>/<area>-<action>-<context>-<outcome>`
 
 **Examples:**
-- `feat/user-profile-editing-flow` - Clear: adds profile editing feature
-- `fix/auth-session-expiry` - Clear: fixes session expiration bug
-- `fix/ci-workflow-prisma-before-tsc-lint-ts-errors` - Clear: fixes CI workflow order and lint/TS errors
-- `refactor/match-algorithm-performance` - Clear: refactors matching for better performance
-- `docs/api-endpoints-authentication` - Clear: documents auth endpoints
+- `feat/matching-expand-skill-filters-to-unblock-discovery`
+- `fix/auth-magic-link-copy-to-raise-activation-rate`
+- `chore/devops-strengthen-prepush-guardrails-for-naming`
+- `ci/playwright-seed-onboarding-data-to-keep-ci-green`
 
-**Best Practices:**
-- Use kebab-case (lowercase with hyphens)
-- Include the "what" (the change) and "why" (the reason) when helpful
-- Keep it under 50 characters when possible
-- Avoid abbreviations unless they're universally understood
+**Branch guardrails (enforced by git hooks):**
+- Prefix with one of `feat/`, `fix/`, `chore/`, `docs/`, `refactor/`, `test/`, `ci/`, or `infra/`
+- Provide **at least four** hyphen-separated tokens describing area, action, context, and desired outcome
+- Minimum length: 24 characters
+- Avoid vague words like `update`, `misc`, `stuff`, `wip`
+- If you genuinely need a shorter or experimental branch, set `SKIP_BRANCH_NAME_CHECK=1` when pushing (not recommended)
 
 ### Single-Purpose Branches
 **Each branch should focus on a single task or goal.** Mixing different tasks in one branch makes it difficult to understand the purpose (the "what" and "why") and complicates code review, debugging, and rollback.
@@ -54,23 +54,24 @@ Branches should be descriptive, concise, and self-explanatory. Both humans and A
 **If you're unsure whether changes belong in separate branches, ask before committing.** It's better to clarify upfront than to split branches later.
 
 ### Commit Messages
-Commit messages should follow conventional commits format and be descriptive enough that both humans and AI agents can understand the change and its purpose at a glance.
+Commit summaries must encode both **what changed** and **why it was necessary**. The pre-push hook blocks commits that are too short or that omit keywords signalling intent (`because`, `so that`, or `to ...`). We still follow Conventional Commits for the beginning of the line.
 
-**Format:** `<type>: <what> [optional: why]`
+**Format:** `<type>(optional-scope): <what> because|so that|to <why>`
 
 **Examples:**
-- `feat: add CEO onboarding form with multi-step validation`
-- `fix: resolve authentication session expiry after 24h`
-- `fix(ci): generate Prisma Client before TypeScript type check`
-- `fix(ci): fix ESLint and TypeScript errors in auth routes`
-- `docs: update README with Neon database setup instructions`
-- `refactor: optimize matching algorithm for better performance`
+- `feat(onboarding): add CEO flow because activation stalled on missing prompts`
+- `fix(auth): harden magic link hashing so that reuse attacks fail`
+- `ci(playwright): seed onboarding fixtures to keep smoke suite determinisitic`
+- `chore(devops): extend branch guardrails to reinforce descriptive naming`
 
-**Best Practices:**
+**Best Practices (guardrails enforce the first two):**
+- Minimum 50 characters in the summary line
+- Include an explicit why using `because`, `so that`, or `to ...`
 - Use present tense ("add" not "added")
-- First line should be under 72 characters
-- Add detailed explanation in body if needed (separated by blank line)
-- Reference issue numbers when applicable: `fix: resolve session bug (#123)`
+- Keep the first line under ~90 characters where possible; add details in the body
+- Reference issues when applicable: `fix(auth): ... because ... (#123)`
+
+> Tip: Hooks auto-prefill the subject from the branch name. Edit the trailing explanation instead of rewriting from scratch.
 
 ### Pre-Push Checklist
 **Always run CI locally before pushing.** There's no value in pushing code that will fail CI checks.
@@ -114,6 +115,7 @@ npx tsc --noEmit
    - Auto-generate PR description
    - Push your branch
    - Automatically create PR with the description (if GitHub CLI is installed)
+6. **Double-check the PR title** – it should mirror the branch naming guideline and explicitly mention both the change and the motivation (`... so that ...` / `... because ...`). Edit it in GitHub if the automation uses an older commit subject.
    
    **Alternative:** Use regular `git push`, then:
    ```bash
@@ -145,7 +147,8 @@ npx tsc --noEmit
 - Every push automatically runs `npm run lint`, `npx tsc --noEmit`, and `npm run test:unit` (if defined). Fix failures before reattempting.
 - The hook now also executes the Playwright smoke harness via `npm run test:e2e:smoke`, which builds the app, boots a production server on `127.0.0.1:3310`, and verifies the landing page. Override once with `SKIP_E2E_SMOKE_CHECK=1` if you're in an emergency where the smoke test is temporarily unstable (not recommended).
 - The hook fetches `origin/main` and blocks the push if your branch is missing the latest commits. Rebase/merge first, or set `SKIP_MAIN_SYNC_CHECK=1` to override once (not recommended).
-- Branch names must follow `<type>/<scope>-<objective>-<detail>` (e.g. `fix/auth-magic-link-email-copy`). Override once with `SKIP_BRANCH_NAME_CHECK=1` if you really must (not recommended).
+- Branch names must follow `<type>/<area>-<action>-<context>-<outcome>` and be at least 24 characters (e.g. `fix/auth-magic-link-copy-to-raise-activation-rate`). Override once with `SKIP_BRANCH_NAME_CHECK=1` if you really must (not recommended).
+- The latest commit summary must include a reason clause (`because`, `so that`, or `to ...`) and be at least 50 characters. Override once with `SKIP_COMMIT_MESSAGE_CHECK=1` (not recommended).
 - To skip the other checks once, set `SKIP_PRE_PUSH_CHECKS=1`. To push to a protected branch, set `ALLOW_PROTECTED_BRANCH_PUSH=1`.
 - Hooks install automatically via `npm install`. Reinstall manually with `npm run setup:hooks`.
 

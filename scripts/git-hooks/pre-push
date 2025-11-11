@@ -23,19 +23,52 @@ if [ "$BRANCH" = "$MAIN_BRANCH" ] || [ "$BRANCH" = "$DEVELOP_BRANCH" ]; then
 fi
 
 # Enforce descriptive branch naming for feature branches
-BRANCH_PATTERN='^(feat|fix|chore|docs|refactor|test)/[a-z0-9]+(-[a-z0-9]+){2,}$'
+BRANCH_PATTERN='^(feat|fix|chore|docs|refactor|test|ci|infra)/[a-z0-9]+(-[a-z0-9]+){3,}$'
+MIN_BRANCH_LENGTH=24
 if [ "$BRANCH" != "$MAIN_BRANCH" ] && [ "$BRANCH" != "$DEVELOP_BRANCH" ]; then
   if [ "${SKIP_BRANCH_NAME_CHECK:-0}" != "1" ]; then
     if ! printf "%s" "$BRANCH" | grep -Eq "$BRANCH_PATTERN"; then
       echo "❌ Branch name '$BRANCH' is too generic."
-      echo "   Use format: <type>/<scope>-<objective>-<detail>"
+      echo "   Use format: <type>/<area>-<action>-<context>-<outcome>"
       echo "   Examples:"
-      echo "     feat/matching-add-skill-filters"
-      echo "     fix/auth-magic-link-email-copy"
-      echo "     chore/devops-improve-pre-push-guardrail"
+      echo "     feat/matching-expand-skill-filters-to-unblock-discovery"
+      echo "     fix/auth-magic-link-copy-to-raise-activation-rate"
+      echo "     chore/devops-prepush-guardrails-to-educate-team"
       echo "   Override once with SKIP_BRANCH_NAME_CHECK=1 (not recommended)."
       exit 1
     fi
+
+    if [ "${#BRANCH}" -lt "$MIN_BRANCH_LENGTH" ]; then
+      echo "❌ Branch name '$BRANCH' is too short to describe the work."
+      echo "   Include what changes and the why (impact or motivating incident)."
+      echo "   Override once with SKIP_BRANCH_NAME_CHECK=1 (not recommended)."
+      exit 1
+    fi
+  fi
+fi
+
+# Ensure the latest commit summary captures intent + rationale
+if [ "${SKIP_COMMIT_MESSAGE_CHECK:-0}" != "1" ]; then
+  LAST_COMMIT_MSG="$(git log -1 --pretty=%s || printf '')"
+  if [ -z "$LAST_COMMIT_MSG" ]; then
+    echo "❌ Unable to read the last commit message."
+    exit 1
+  fi
+
+  if [ "${#LAST_COMMIT_MSG}" -lt 50 ]; then
+    echo "❌ Commit summary is too short to convey intent and rationale:"
+    echo "   $LAST_COMMIT_MSG"
+    echo "   Summaries must be at least 50 characters."
+    echo "   Override once with SKIP_COMMIT_MESSAGE_CHECK=1 (not recommended)."
+    exit 1
+  fi
+
+  if ! printf "%s" "$LAST_COMMIT_MSG" | grep -Eq '(because|so that|to )'; then
+    echo "❌ Commit summary must explain the why."
+    echo "   Add phrasing such as '... because ...', '... so that ...', or '... to ...'."
+    echo "   Example: fix(auth): harden token hashing so that magic link reuse is blocked"
+    echo "   Override once with SKIP_COMMIT_MESSAGE_CHECK=1 (not recommended)."
+    exit 1
   fi
 fi
 
