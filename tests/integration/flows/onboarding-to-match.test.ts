@@ -70,44 +70,46 @@ describeIfDatabaseConfigured("Onboarding flow through match preview", () => {
     const prisma = getTestPrismaClient();
 
     // Existing CTO in the system with embedding data
-    const cto = await prisma.user.create({
-      data: {
-        email: "cto@example.com",
-        role: "CTO",
-        profile: {
-          create: {
-            name: "CTO Example",
-            location: "Remote",
-            timezone: "UTC",
-            availability: "Full-time",
-            commitment: "High",
+    const [cto, ceo] = await prisma.$transaction([
+      prisma.user.create({
+        data: {
+          email: "cto@example.com",
+          role: "CTO",
+          profile: {
+            create: {
+              name: "CTO Example",
+              location: "Remote",
+              timezone: "UTC",
+              availability: "Full-time",
+              commitment: "High",
+            },
+          },
+          techBackground: {
+            create: {
+              primary_stack: "TypeScript",
+              years_experience: 6,
+              domains: "SaaS",
+              track_record: "Built matching platforms",
+            },
+          },
+          profileSummary: {
+            create: { ai_summary_text: "Experienced CTO ready to partner." },
+          },
+          embeddings: {
+            create: [
+              {
+                role: "CTO",
+                source: "summary",
+                vector: toVectorBuffer([0.92, 0.1, 0.05]),
+              },
+            ],
           },
         },
-        techBackground: {
-          create: {
-            primary_stack: "TypeScript",
-            years_experience: 6,
-            domains: "SaaS",
-            track_record: "Built matching platforms",
-          },
-        },
-      },
-    });
-    await prisma.profileSummary.create({
-      data: { userId: cto.id, ai_summary_text: "Experienced CTO ready to partner." },
-    });
-    await prisma.embedding.create({
-      data: {
-        userId: cto.id,
-        role: "CTO",
-        source: "summary",
-        vector: toVectorBuffer([0.92, 0.1, 0.05]),
-      },
-    });
-
-    const ceo = await prisma.user.create({
-      data: { email: "ceo@example.com", role: "CEO" },
-    });
+      }),
+      prisma.user.create({
+        data: { email: "ceo@example.com", role: "CEO" },
+      }),
+    ]);
 
     summarizeMock.mockResolvedValue("Visionary CEO summary");
     buildMatchRationaleMock.mockResolvedValue("Aligned mission and complementary skills");
