@@ -1,6 +1,9 @@
 import { defineConfig, devices } from "@playwright/test";
+import { ensurePlaywrightEnv, getPlaywrightBaseURL } from "./tests/e2e/support/env";
 
-const baseURL = process.env.PLAYWRIGHT_BASE_URL;
+ensurePlaywrightEnv();
+const baseURL = getPlaywrightBaseURL();
+const isCI = Boolean(process.env.CI);
 
 export default defineConfig({
   testDir: "tests/e2e",
@@ -10,6 +13,7 @@ export default defineConfig({
   },
   retries: process.env.CI ? 1 : 0,
   reporter: [["list"]],
+  workers: isCI ? 2 : undefined,
   use: {
     baseURL,
     trace: "on-first-retry",
@@ -21,6 +25,6 @@ export default defineConfig({
       use: devices["Desktop Chrome"],
     },
   ],
+  outputDir: "tmp/playwright-output",
 });
-
 

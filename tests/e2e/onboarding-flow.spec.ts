@@ -1,29 +1,14 @@
 import { test, expect } from "@playwright/test";
 import { PrismaClient, Role } from "@prisma/client";
-import { config as loadEnv } from "dotenv";
-import path from "node:path";
-import { existsSync } from "node:fs";
+import {
+  ensurePlaywrightEnv,
+  getDatabaseUrl,
+  getPlaywrightBaseURL,
+} from "./support/env";
 
-// Ensure database credentials are available for Prisma inside the Playwright runner.
-const envFiles = [".env.test.local", ".env.test", ".env.local", ".env"];
-for (const file of envFiles) {
-  const resolved = path.resolve(process.cwd(), file);
-  if (existsSync(resolved)) {
-    loadEnv({ path: resolved, override: false });
-  }
-}
+ensurePlaywrightEnv();
 
-const databaseUrl = process.env.TEST_DATABASE_URL ?? process.env.DATABASE_URL;
-if (!databaseUrl) {
-  throw new Error(
-    "TEST_DATABASE_URL or DATABASE_URL must be provided for e2e onboarding tests."
-  );
-}
-
-process.env.DATABASE_URL = databaseUrl;
-if (!process.env.TEST_DATABASE_URL) {
-  process.env.TEST_DATABASE_URL = databaseUrl;
-}
+const databaseUrl = getDatabaseUrl();
 
 const prisma = new PrismaClient({
   datasources: { db: { url: databaseUrl } },
@@ -33,7 +18,7 @@ function toVector(values: number[]) {
   return Buffer.from(new Float32Array(values).buffer);
 }
 
-const BASE_URL = process.env.PLAYWRIGHT_BASE_URL ?? "http://127.0.0.1:3310";
+const BASE_URL = getPlaywrightBaseURL();
 
 test.describe("Onboarding journeys", () => {
   test.beforeEach(async () => {
