@@ -5,6 +5,7 @@ import {
   getPlaywrightBaseURL,
   getDatabaseUrl,
 } from "../support/env";
+import { resetPrismaForE2E } from "../support/prisma";
 
 ensurePlaywrightEnv();
 
@@ -15,19 +16,7 @@ const prisma = new PrismaClient({
 
 test.describe("Authentication flows", () => {
   test.beforeEach(async () => {
-    await prisma.$transaction([
-      prisma.session.deleteMany(),
-      prisma.verificationToken.deleteMany(),
-      prisma.account.deleteMany(),
-      prisma.match.deleteMany(),
-      prisma.embedding.deleteMany(),
-      prisma.profileSummary.deleteMany(),
-      prisma.interviewResponse.deleteMany(),
-      prisma.techBackground.deleteMany(),
-      prisma.startup.deleteMany(),
-      prisma.profile.deleteMany(),
-      prisma.user.deleteMany(),
-    ]);
+    await resetPrismaForE2E(prisma);
   });
 
   test.afterAll(async () => {

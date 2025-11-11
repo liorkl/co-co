@@ -5,33 +5,22 @@ import {
   getDatabaseUrl,
   getPlaywrightBaseURL,
 } from "./support/env";
+import {
+  resetPrismaForE2E,
+  toVectorBuffer,
+} from "./support/prisma";
 
 ensurePlaywrightEnv();
 
-const databaseUrl = getDatabaseUrl();
-
 const prisma = new PrismaClient({
-  datasources: { db: { url: databaseUrl } },
+  datasources: { db: { url: getDatabaseUrl() } },
 });
-
-function toVector(values: number[]) {
-  return Buffer.from(new Float32Array(values).buffer);
-}
 
 const BASE_URL = getPlaywrightBaseURL();
 
 test.describe("Onboarding journeys", () => {
   test.beforeEach(async () => {
-    await prisma.$transaction([
-      prisma.match.deleteMany(),
-      prisma.embedding.deleteMany(),
-      prisma.profileSummary.deleteMany(),
-      prisma.interviewResponse.deleteMany(),
-      prisma.techBackground.deleteMany(),
-      prisma.startup.deleteMany(),
-      prisma.profile.deleteMany(),
-      prisma.user.deleteMany(),
-    ]);
+    await resetPrismaForE2E(prisma);
   });
 
   test.afterAll(async () => {
@@ -67,7 +56,7 @@ test.describe("Onboarding journeys", () => {
         userId: ceo.id,
         role: Role.CEO,
         source: "summary",
-        vector: toVector([1, 0]),
+        vector: toVectorBuffer([1, 0]),
       },
     });
 
@@ -132,7 +121,7 @@ test.describe("Onboarding journeys", () => {
             create: {
               role: Role.CTO,
               source: "summary",
-              vector: toVector(data.vector),
+              vector: toVectorBuffer(data.vector),
             },
           },
         },
@@ -220,7 +209,7 @@ test.describe("Onboarding journeys", () => {
         userId: cto.id,
         role: Role.CTO,
         source: "summary",
-        vector: toVector([0.9, 0.2]),
+        vector: toVectorBuffer([0.9, 0.2]),
       },
     });
 
@@ -279,7 +268,7 @@ test.describe("Onboarding journeys", () => {
             create: {
               role: Role.CEO,
               source: "summary",
-              vector: toVector(data.vector),
+              vector: toVectorBuffer(data.vector),
             },
           },
         },
