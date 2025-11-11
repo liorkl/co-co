@@ -13,7 +13,7 @@ export default defineConfig({
   },
   retries: process.env.CI ? 1 : 0,
   reporter: [["list"]],
-  workers: isCI ? 2 : undefined,
+  workers: 1,
   use: {
     baseURL,
     trace: "on-first-retry",
