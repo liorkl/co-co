@@ -1,8 +1,7 @@
 import { test, expect } from "@playwright/test";
+import { ensurePlaywrightEnv } from "./support/env";
 
-const baseURL = process.env.PLAYWRIGHT_BASE_URL;
-
-test.skip(!baseURL, "Set PLAYWRIGHT_BASE_URL to run e2e smoke tests against a live environment.");
+ensurePlaywrightEnv();
 
 test.describe("Landing page smoke test", () => {
   test("shows hero content and auth links", async ({ page }) => {

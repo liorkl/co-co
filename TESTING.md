@@ -70,6 +70,15 @@ npx prisma studio
   This script builds the production bundle, starts `npm run start` on `127.0.0.1:3310`, waits for readiness with `wait-on`, and executes the Playwright landing-page smoke spec with `PLAYWRIGHT_BASE_URL` set automatically. The process is cleaned up for you via shell traps.
 - To skip it temporarily (not recommended), export `SKIP_E2E_SMOKE_CHECK=1`. The pre-push hook respects the same variable.
 
+### Full Playwright Environment
+- Install the required browsers once after cloning:
+  ```bash
+  npx playwright install --with-deps
+  ```
+- Ensure either `TEST_DATABASE_URL` or `DATABASE_URL` points at a throwaway Postgres branch. The Playwright helper automatically mirrors `DATABASE_URL` into `TEST_DATABASE_URL`.
+- When running `npm run test:e2e` manually, make sure the Next.js server is running on `http://127.0.0.1:3310` (use the smoke script above, or `npm run dev -- --hostname 127.0.0.1 --port 3310` for interactive debugging). The Playwright config defaults `PLAYWRIGHT_BASE_URL` to that address if not provided.
+- Artifacts from test runs (traces, videos, screenshots) are written to `tmp/playwright-output/`. Inspect them with `npx playwright show-report`.
+
 
 ### Check Terminal Logs
 Look for these log messages:
