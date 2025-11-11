@@ -34,7 +34,7 @@ if [ -s "$COMMIT_MSG_FILE" ]; then
   fi
 fi
 
-BRANCH_PATTERN='^(feat|fix|chore|docs|refactor|test)/[a-z0-9]+(-[a-z0-9]+){2,}$'
+BRANCH_PATTERN='^(feat|fix|chore|docs|refactor|test|ci|infra)/[a-z0-9]+(-[a-z0-9]+){3,}$'
 if ! printf "%s" "$BRANCH" | grep -Eq "$BRANCH_PATTERN"; then
   exit 0
 fi
