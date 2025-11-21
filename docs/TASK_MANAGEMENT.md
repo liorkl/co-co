@@ -14,11 +14,8 @@ This guide explains how to manage tasks, backlog, and work items in the FounderF
 2. **Create your project board** (one-time, manual):
    - Go to: https://github.com/liorkl/co-co/projects/new
    - Choose "Board" template
-   - **Name suggestions:**
-     - `FounderFinder Backlog` (recommended - project-specific)
-     - `Development Board` (if you have multiple projects)
-     - `Sprint Board` (if using sprints)
-     - `Product Backlog` (product-focused)
+   - **Name:** `Co-Co Backlog` (current project name)
+     - Alternative names: `FounderFinder Backlog`, `Development Board`, `Sprint Board`, `Product Backlog`
    - Add columns: Backlog → In Progress → Review → Done
 
 ## Task Lifecycle

@@ -9,7 +9,7 @@ npm run task:setup
 # 2. Create project board manually:
 #    https://github.com/liorkl/co-co/projects/new
 #    - Choose "Board" template
-#    - Name: "FounderFinder Backlog" (or your preferred name)
+#    - Name: "Co-Co Backlog" ✅ (or your preferred name)
 #    - Columns: Backlog → In Progress → Review → Done
 ```
 
