@@ -23,7 +23,19 @@ export default defineConfig({
       provider: "v8",
       reportsDirectory: path.resolve(__dirname, "coverage"),
       reporter: ["text", "json", "html"],
-      exclude: ["tests/e2e/**", "**/*.config.{js,ts}", "**/.next/**", "scripts/**"],
+      exclude: [
+        "tests/e2e/**",
+        "tests/helpers/**",
+        "**/*.config.{js,ts}",
+        "**/.next/**",
+        "scripts/**",
+      ],
+      thresholds: {
+        statements: 80,
+        branches: 70,
+        functions: 80,
+        lines: 80,
+      },
     },
   },
 });
