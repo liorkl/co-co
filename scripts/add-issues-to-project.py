@@ -70,13 +70,26 @@ def find_project(token):
         return None
     
     data = response.json()
-    if "errors" in data:
-        print("❌ GraphQL Errors:")
-        for error in data["errors"]:
-            print(f"   {error.get('message', 'Unknown error')}")
-        if "read:project" in str(data["errors"]):
-            print("\n💡 Solution: Run 'gh auth refresh -s read:project,write:project'")
-        return None
+    
+    # Handle errors, but allow organization errors since liorkl is a user
+    if "errors" in data and len(data.get("errors", [])) > 0:
+        error_messages = [error.get("message", "Unknown error") for error in data["errors"]]
+        # Check if all errors are organization-related (user account, not org)
+        org_errors_only = all(
+            "Could not resolve to an Organization" in msg or "organization" in msg.lower()
+            for msg in error_messages
+        )
+        
+        if not org_errors_only:
+            # Real errors that should stop execution
+            print("❌ GraphQL Errors:")
+            for error in data["errors"]:
+                print(f"   {error.get('message', 'Unknown error')}")
+            if "read:project" in str(data["errors"]) or "project" in str(data["errors"]):
+                print("\n💡 Solution: Run 'gh auth refresh -s read:project,write:project'")
+                print("   Or use the 'project' scope: 'gh auth refresh -s project'")
+            return None
+        # If only org errors, continue to check user projects
     
     # Check organization projects
     org_projects = data.get("data", {}).get("organization", {}).get("projectsV2", {}).get("nodes", [])
