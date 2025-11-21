@@ -134,8 +134,8 @@ def get_issue_node_id(token, issue_num):
 def add_issue_to_project(token, project_id, issue_id):
     """Add issue to project using GraphQL"""
     mutation = """
-    mutation($projectId: ID!, $itemId: ID!) {
-      addProjectV2ItemById(input: {projectId: $projectId, itemId: $itemId}) {
+    mutation($projectId: ID!, $contentId: ID!) {
+      addProjectV2ItemById(input: {projectId: $projectId, contentId: $contentId}) {
         item {
           id
         }
@@ -151,7 +151,7 @@ def add_issue_to_project(token, project_id, issue_id):
     
     variables = {
         "projectId": project_id,
-        "itemId": issue_id
+        "contentId": issue_id
     }
     
     response = requests.post(
@@ -180,6 +180,13 @@ def main():
         print("❌ No GitHub token found. Set GITHUB_TOKEN or run 'gh auth login'")
         sys.exit(1)
     
+    # Check for requests library before any functions that use it
+    try:
+        import requests
+    except ImportError:
+        print("❌ 'requests' library required. Install with: pip install requests")
+        sys.exit(1)
+    
     project_info = find_project(token)
     if not project_info:
         print(f"\n❌ Could not find project '{PROJECT_NAME}'")
@@ -196,12 +203,6 @@ def main():
     success_count = 0
     exists_count = 0
     error_count = 0
-    
-    try:
-        import requests
-    except ImportError:
-        print("❌ 'requests' library required. Install with: pip install requests")
-        sys.exit(1)
     
     for issue_num in ISSUES:
         print(f"  Processing issue #{issue_num}...", end=" ", flush=True)

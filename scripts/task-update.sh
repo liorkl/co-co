@@ -59,8 +59,14 @@ while [ $# -gt 0 ]; do
           exit 1
           ;;
       esac
-      # Remove old status labels
-      gh issue edit "$ISSUE_NUMBER" --remove-label "status:backlog" "status:todo" "status:in-progress" "status:review" "status:blocked" "status:done" 2>/dev/null || true
+      # Remove old status labels (each label needs its own --remove-label flag)
+      gh issue edit "$ISSUE_NUMBER" \
+        --remove-label "status:backlog" \
+        --remove-label "status:todo" \
+        --remove-label "status:in-progress" \
+        --remove-label "status:review" \
+        --remove-label "status:blocked" \
+        --remove-label "status:done" 2>/dev/null || true
       # Add new status label
       gh issue edit "$ISSUE_NUMBER" --add-label "$LABEL" 2>/dev/null && \
         echo -e "${GREEN}✅ Updated status to: $STATUS${NC}"
@@ -79,8 +85,12 @@ while [ $# -gt 0 ]; do
           exit 1
           ;;
       esac
-      # Remove old priority labels
-      gh issue edit "$ISSUE_NUMBER" --remove-label "priority:critical" "priority:high" "priority:medium" "priority:low" 2>/dev/null || true
+      # Remove old priority labels (each label needs its own --remove-label flag)
+      gh issue edit "$ISSUE_NUMBER" \
+        --remove-label "priority:critical" \
+        --remove-label "priority:high" \
+        --remove-label "priority:medium" \
+        --remove-label "priority:low" 2>/dev/null || true
       # Add new priority label
       gh issue edit "$ISSUE_NUMBER" --add-label "$LABEL" 2>/dev/null && \
         echo -e "${GREEN}✅ Updated priority to: $PRIORITY${NC}"
