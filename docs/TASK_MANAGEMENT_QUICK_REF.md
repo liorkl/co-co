@@ -9,8 +9,8 @@ npm run task:setup
 # 2. Create project board manually:
 #    https://github.com/liorkl/co-co/projects/new
 #    - Choose "Board" template
-#    - Name: "Task Management"
-#    - Columns: Backlog → Todo → In Progress → Review → Done
+#    - Name: "FounderFinder Backlog" (or your preferred name)
+#    - Columns: Backlog → In Progress → Review → Done
 ```
 
 ## 📝 Daily Commands
@@ -79,7 +79,7 @@ type:docs priority:low size:small status:backlog
 ## 📊 Status Flow
 
 ```
-Backlog → Todo → In Progress → Review → Done
+Backlog → In Progress → Review → Done
 ```
 
 ## 🔗 Links

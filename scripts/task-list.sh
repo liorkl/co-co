@@ -47,7 +47,7 @@ while [ $# -gt 0 ]; do
       echo "Usage: $0 [options...]"
       echo ""
       echo "Options:"
-      echo "  --status <status>     Filter by status (backlog|todo|in-progress|review|blocked|done)"
+      echo "  --status <status>     Filter by status (backlog|in-progress|review|blocked|done)"
       echo "  --priority <priority> Filter by priority (critical|high|medium|low)"
       echo "  --type <type>         Filter by type (feature|bug|chore|docs|refactor|test|ci|infra)"
       echo "  --assignee <user>     Filter by assignee"

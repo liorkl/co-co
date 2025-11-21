@@ -19,7 +19,7 @@ if [ $# -lt 1 ]; then
   echo "Usage: $0 <issue-number> [options...]"
   echo ""
   echo "Options:"
-  echo "  --status <status>        Set status (backlog|todo|in-progress|review|blocked|done)"
+  echo "  --status <status>        Set status (backlog|in-progress|review|blocked|done)"
   echo "  --priority <priority>    Set priority (critical|high|medium|low)"
   echo "  --add-label <label>     Add a label"
   echo "  --remove-label <label>  Remove a label"
@@ -49,14 +49,13 @@ while [ $# -gt 0 ]; do
       shift 2
       case "$STATUS" in
         backlog) LABEL="status:backlog" ;;
-        todo) LABEL="status:todo" ;;
         in-progress) LABEL="status:in-progress" ;;
         review) LABEL="status:review" ;;
         blocked) LABEL="status:blocked" ;;
         done) LABEL="status:done" ;;
         *)
           echo -e "${RED}❌ Invalid status: $STATUS${NC}"
-          echo "   Valid: backlog, todo, in-progress, review, blocked, done"
+          echo "   Valid: backlog, in-progress, review, blocked, done"
           exit 1
           ;;
       esac

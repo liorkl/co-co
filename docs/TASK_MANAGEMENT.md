@@ -14,15 +14,19 @@ This guide explains how to manage tasks, backlog, and work items in the FounderF
 2. **Create your project board** (one-time, manual):
    - Go to: https://github.com/liorkl/co-co/projects/new
    - Choose "Board" template
-   - Name: "Task Management"
-   - Add columns: Backlog → Todo → In Progress → Review → Done
+   - **Name suggestions:**
+     - `FounderFinder Backlog` (recommended - project-specific)
+     - `Development Board` (if you have multiple projects)
+     - `Sprint Board` (if using sprints)
+     - `Product Backlog` (product-focused)
+   - Add columns: Backlog → In Progress → Review → Done
 
 ## Task Lifecycle
 
 ```
-Backlog → Todo → In Progress → Review → Done
-   ↓        ↓         ↓          ↓        ↓
- Issues  Ready    Active    PR Open   Merged
+Backlog → In Progress → Review → Done
+   ↓          ↓            ↓        ↓
+  Issues    Active     PR Open   Merged
 ```
 
 ## Creating Tasks
@@ -54,13 +58,13 @@ npm run task:create "Fix login redirect" \
 ### Update Status
 
 ```bash
-# Move to in-progress
+# Start working (move from backlog to in-progress)
 npm run task:update 5 --status in-progress
 
-# Move to review
+# Create PR (move to review)
 npm run task:update 5 --status review
 
-# Mark as done
+# Complete (after PR merge)
 npm run task:update 5 --status done
 ```
 
@@ -135,12 +139,13 @@ npm run task:list --all
 
 ### Status Labels
 
-- `status:backlog` - In backlog
-- `status:todo` - Ready to start
+- `status:backlog` - In backlog (not started)
 - `status:in-progress` - Currently working on
 - `status:review` - In code review
 - `status:blocked` - Blocked by dependency
 - `status:done` - Completed
+
+**Note:** The `status:todo` label exists but isn't needed for the simplified workflow. All unstarted items use `status:backlog`.
 
 ### Size Labels
 
@@ -155,7 +160,7 @@ npm run task:list --all
 
 ```bash
 # 1. Find a task
-npm run task:list --status todo --priority high
+npm run task:list --status backlog --priority high
 
 # 2. Move to in-progress
 npm run task:update 5 --status in-progress --assign liorkl
@@ -198,8 +203,8 @@ npm run task:update 5 --status blocked --comment "Waiting on API changes in #10"
 
 ### Auto-Updates
 
-- **PR Created** → Issue moves to "Review" column
-- **PR Merged** → Issue moves to "Done" column
+- **PR Created** → Issue moves to "Review" column (or update manually with `--status review`)
+- **PR Merged** → Issue auto-closes and moves to "Done" column
 - **Issue Closed** → Issue archived after 30 days
 
 ## Best Practices
@@ -277,14 +282,14 @@ npm run task:setup
 ### Query Examples
 
 ```bash
-# High priority bugs
-gh issue list --label "priority:high,type:bug"
+# High priority bugs in backlog
+gh issue list --label "priority:high,type:bug,status:backlog"
 
 # In-progress features
 gh issue list --label "status:in-progress,type:feature"
 
 # Unassigned tasks
-gh issue list --no-assignee
+gh issue list --no-assignee --label "status:backlog"
 ```
 
 ### Bulk Operations
