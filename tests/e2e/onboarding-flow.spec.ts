@@ -9,6 +9,7 @@ import {
   resetPrismaForE2E,
   toVectorBuffer,
 } from "./support/prisma";
+import { normalizeMagicLink } from "./support/url";
 
 ensurePlaywrightEnv();
 
@@ -136,9 +137,10 @@ test.describe("Onboarding journeys", () => {
 
     const { magicLink } = await response.json();
     expect(magicLink).toBeTruthy();
+    const normalizedLink = normalizeMagicLink(magicLink, BASE_URL);
 
     // Complete sign-in flow via magic link
-    await page.goto(magicLink);
+    await page.goto(normalizedLink);
     await page.waitForURL(/\/onboarding\/role$/, { timeout: 15_000 });
     await expect(page.getByRole("heading", { name: "Select your role" })).toBeVisible();
 
@@ -285,9 +287,10 @@ test.describe("Onboarding journeys", () => {
     expect(response.ok()).toBeTruthy();
     const { magicLink } = await response.json();
     expect(magicLink).toBeTruthy();
+    const normalizedLink = normalizeMagicLink(magicLink, BASE_URL);
 
     // Complete sign-in flow via magic link
-    await page.goto(magicLink);
+    await page.goto(normalizedLink);
     await page.waitForURL(/\/onboarding\/role$/, { timeout: 15_000 });
     await expect(page.getByRole("heading", { name: "Select your role" })).toBeVisible();
 
