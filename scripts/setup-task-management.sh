@@ -91,7 +91,7 @@ create_task_label "status:todo" "c2e0c6" "Ready to start"
 create_task_label "status:in-progress" "1d76db" "Currently working on"
 create_task_label "status:review" "d4c5f9" "In code review"
 create_task_label "status:blocked" "e99695" "Blocked by dependency"
-create_task_label "status:done" "0e8a16" "Completed"
+create_task_label "status:done" "28a745" "Completed"
 
 echo -e "\n${YELLOW}📋 Step 4: Creating Size Labels${NC}"
 create_task_label "size:small" "3cbf00" "Small task (< 1 day)"

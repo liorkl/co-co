@@ -163,7 +163,7 @@ def add_issue_to_project(token, project_id, issue_id):
     
     if response.status_code == 200:
         data = response.json()
-        if "errors" in data:
+        if "errors" in data and len(data.get("errors", [])) > 0:
             error_msg = data["errors"][0].get("message", "Unknown error")
             if "already exists" in error_msg.lower():
                 return "exists"

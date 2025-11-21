@@ -37,12 +37,22 @@ LABELS=("$@")
 
 # Create issue
 echo "Creating issue: $TITLE"
-ISSUE_NUMBER=$(gh issue create \
-  --title "$TITLE" \
-  --body "$DESCRIPTION" \
-  --label "${LABELS[@]}" \
-  --json number \
-  --jq '.number' 2>/dev/null)
+
+# Build gh command with conditional --label flag
+GH_CMD=(
+  gh issue create
+  --title "$TITLE"
+  --body "$DESCRIPTION"
+)
+
+# Only add --label if labels are provided
+if [ ${#LABELS[@]} -gt 0 ]; then
+  GH_CMD+=(--label "${LABELS[@]}")
+fi
+
+GH_CMD+=(--json number --jq '.number')
+
+ISSUE_NUMBER=$("${GH_CMD[@]}" 2>/dev/null)
 
 if [ -z "$ISSUE_NUMBER" ]; then
   echo -e "${RED}❌ Failed to create issue${NC}"
