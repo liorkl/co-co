@@ -18,7 +18,7 @@ describe("AI helpers", () => {
     }));
 
     vi.unstubAllEnvs();
-    delete process.env.OPENAI_API_KEY;
+    vi.stubEnv("OPENAI_API_KEY", "");
 
     const { summarizeProfile, buildMatchRationale } = await import("@/lib/ai");
 
