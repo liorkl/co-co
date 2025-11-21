@@ -31,10 +31,11 @@ export default defineConfig({
         "scripts/**",
       ],
       thresholds: {
-        statements: 80,
-        branches: 70,
-        functions: 80,
-        lines: 80,
+        // Quality coverage thresholds - balanced for thoroughness and practicality
+        statements: 85,  // Core logic should be well-tested (currently: 100% ✅)
+        branches: 71,    // Error handling coverage - matches current (71.42%), aim to improve to 75%+
+        functions: 85,   // Ensure most functions have test coverage (currently: 100% ✅)
+        lines: 85,       // Consistent with statements for code execution (currently: 100% ✅)
       },
     },
   },
