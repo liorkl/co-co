@@ -46,8 +46,11 @@ GH_CMD=(
 )
 
 # Only add --label if labels are provided
+# GitHub CLI requires each label to have its own --label flag
 if [ ${#LABELS[@]} -gt 0 ]; then
-  GH_CMD+=(--label "${LABELS[@]}")
+  for label in "${LABELS[@]}"; do
+    GH_CMD+=(--label "$label")
+  done
 fi
 
 GH_CMD+=(--json number --jq '.number')

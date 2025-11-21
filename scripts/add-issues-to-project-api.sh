@@ -33,9 +33,10 @@ if echo "$RESPONSE" | jq -e '.errors' > /dev/null 2>&1; then
   if ! echo "$ERROR_MSG" | grep -q "Could not resolve to an Organization"; then
     echo "❌ API Error:"
     echo "$RESPONSE" | jq -r '.errors[].message'
-    if echo "$RESPONSE" | grep -q "read:project"; then
+    if echo "$RESPONSE" | grep -q "read:project\|project"; then
       echo ""
-      echo "💡 Solution: Run 'gh auth refresh -h github.com -s read:project'"
+      echo "💡 Solution: Run 'gh auth refresh -s read:project,write:project'"
+      echo "   Or use the 'project' scope: 'gh auth refresh -s project'"
     fi
     exit 1
   fi
