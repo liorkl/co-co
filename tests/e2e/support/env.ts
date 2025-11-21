@@ -5,7 +5,7 @@ import path from "node:path";
 let initialized = false;
 
 const ENV_FILES = [".env.test.local", ".env.test", ".env.local", ".env"];
-const DEFAULT_BASE_URL = "http://127.0.0.1:3310";
+const DEFAULT_BASE_URL = "http://localhost:3310";
 
 export function ensurePlaywrightEnv() {
   if (initialized) return;

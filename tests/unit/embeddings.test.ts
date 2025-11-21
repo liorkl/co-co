@@ -8,6 +8,15 @@ afterEach(() => {
 
 describe("embeddings helpers", () => {
   it("returns empty bytes and skips persistence when OpenAI API key is missing", async () => {
+    // Mock OpenAI to prevent browser environment error when API key is missing
+    vi.doMock("openai", () => ({
+      default: class {
+        constructor() {
+          // No-op constructor for when API key is missing
+        }
+      },
+    }));
+
     const prismaMock = {
       embedding: {
         create: vi.fn(),
@@ -15,6 +24,9 @@ describe("embeddings helpers", () => {
     };
 
     vi.doMock("@/lib/db", () => ({ prisma: prismaMock }));
+
+    vi.unstubAllEnvs();
+    vi.stubEnv("OPENAI_API_KEY", "");
 
     const { embed, upsertEmbedding } = await import("@/lib/embeddings");
 
