@@ -87,7 +87,6 @@ create_task_label "type:infra" "f9d0c4" "Infrastructure changes"
 
 echo -e "\n${YELLOW}📋 Step 3: Creating Status Labels${NC}"
 create_task_label "status:backlog" "ededed" "In backlog"
-create_task_label "status:todo" "c2e0c6" "Ready to start"
 create_task_label "status:in-progress" "1d76db" "Currently working on"
 create_task_label "status:review" "d4c5f9" "In code review"
 create_task_label "status:blocked" "e99695" "Blocked by dependency"

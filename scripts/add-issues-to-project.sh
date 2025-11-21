@@ -25,17 +25,36 @@ if [ -z "$PROJECT_NUMBER" ]; then
 fi
 
 echo "✅ Found project #$PROJECT_NUMBER: $PROJECT_NAME"
-echo "📋 Adding issues to project..."
+echo "📋 Adding ${#ISSUES[@]} issues to project..."
+echo ""
+
+SUCCESS=0
+EXISTS=0
+ERRORS=0
 
 for ISSUE_NUM in "${ISSUES[@]}"; do
-  echo "  Adding issue #$ISSUE_NUM..."
-  gh project item-add "$PROJECT_NUMBER" --owner liorkl --url "https://github.com/$REPO/issues/$ISSUE_NUM" 2>/dev/null || \
-  gh project item-add "$PROJECT_NUMBER" --url "https://github.com/$REPO/issues/$ISSUE_NUM" 2>/dev/null || {
-    echo "    ⚠️  Failed to add issue #$ISSUE_NUM (may already be in project)"
-  }
+  echo -n "  Issue #$ISSUE_NUM... "
+  
+  if ADD_OUTPUT=$(gh project item-add "$PROJECT_NUMBER" --owner liorkl --url "https://github.com/$REPO/issues/$ISSUE_NUM" 2>&1); then
+    echo "✅"
+    ((SUCCESS++))
+  elif ADD_OUTPUT=$(gh project item-add "$PROJECT_NUMBER" --url "https://github.com/$REPO/issues/$ISSUE_NUM" 2>&1); then
+    echo "✅"
+    ((SUCCESS++))
+  elif echo "$ADD_OUTPUT" | grep -qi "already\|exists"; then
+    echo "ℹ️  (already in project)"
+    ((EXISTS++))
+  else
+    echo "❌ (failed)"
+    ((ERRORS++))
+  fi
 done
 
-echo "✅ Done! Added ${#ISSUES[@]} issues to project '$PROJECT_NAME'"
+echo ""
+echo "✅ Summary:"
+echo "   Added: $SUCCESS"
+echo "   Already in project: $EXISTS"
+echo "   Errors: $ERRORS"
 echo ""
 echo "📊 View project: https://github.com/users/liorkl/projects/$PROJECT_NUMBER"
 
