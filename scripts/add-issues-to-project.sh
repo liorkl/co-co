@@ -37,16 +37,16 @@ for ISSUE_NUM in "${ISSUES[@]}"; do
   
   if ADD_OUTPUT=$(gh project item-add "$PROJECT_NUMBER" --owner liorkl --url "https://github.com/$REPO/issues/$ISSUE_NUM" 2>&1); then
     echo "✅"
-    ((SUCCESS++))
+    SUCCESS=$((SUCCESS + 1))
   elif ADD_OUTPUT=$(gh project item-add "$PROJECT_NUMBER" --url "https://github.com/$REPO/issues/$ISSUE_NUM" 2>&1); then
     echo "✅"
-    ((SUCCESS++))
+    SUCCESS=$((SUCCESS + 1))
   elif echo "$ADD_OUTPUT" | grep -qi "already\|exists"; then
     echo "ℹ️  (already in project)"
-    ((EXISTS++))
+    EXISTS=$((EXISTS + 1))
   else
     echo "❌ (failed)"
-    ((ERRORS++))
+    ERRORS=$((ERRORS + 1))
   fi
 done
 

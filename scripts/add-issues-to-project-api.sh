@@ -87,7 +87,7 @@ for ISSUE_NUM in "${ISSUES[@]}"; do
   
   if [ -z "$ISSUE_ID" ] || [ "$ISSUE_ID" = "null" ]; then
     echo "❌ (issue not found)"
-    ((ERRORS++))
+    ERRORS=$((ERRORS + 1))
     continue
   fi
   
@@ -107,14 +107,14 @@ for ISSUE_NUM in "${ISSUES[@]}"; do
   
   if echo "$ADD_RESPONSE" | jq -e '.data.addProjectV2ItemById' > /dev/null 2>&1; then
     echo "✅"
-    ((SUCCESS++))
+    SUCCESS=$((SUCCESS + 1))
   elif echo "$ADD_RESPONSE" | grep -q "already exists\|already added"; then
     echo "ℹ️  (already in project)"
-    ((EXISTS++))
+    EXISTS=$((EXISTS + 1))
   else
     ERROR_MSG=$(echo "$ADD_RESPONSE" | jq -r '.errors[0].message' 2>/dev/null || echo "Unknown error")
     echo "❌ ($ERROR_MSG)"
-    ((ERRORS++))
+    ERRORS=$((ERRORS + 1))
   fi
 done
 

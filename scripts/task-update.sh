@@ -75,7 +75,8 @@ while [ $# -gt 0 ]; do
         --remove-label "status:done" 2>/dev/null || true
       # Add new status label
       gh issue edit "$ISSUE_NUMBER" --add-label "$LABEL" 2>/dev/null && \
-        echo -e "${GREEN}✅ Updated status to: $STATUS${NC}"
+        echo -e "${GREEN}✅ Updated status to: $STATUS${NC}" || \
+        echo -e "${YELLOW}⚠️  Failed to update status: $STATUS${NC}"
       ;;
     --priority)
       PRIORITY="$2"
@@ -99,7 +100,8 @@ while [ $# -gt 0 ]; do
         --remove-label "priority:low" 2>/dev/null || true
       # Add new priority label
       gh issue edit "$ISSUE_NUMBER" --add-label "$LABEL" 2>/dev/null && \
-        echo -e "${GREEN}✅ Updated priority to: $PRIORITY${NC}"
+        echo -e "${GREEN}✅ Updated priority to: $PRIORITY${NC}" || \
+        echo -e "${YELLOW}⚠️  Failed to update priority: $PRIORITY${NC}"
       ;;
     --add-label)
       LABEL="$2"
