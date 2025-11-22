@@ -191,7 +191,7 @@ describeIfDatabaseConfigured("POST /api/match/preview", () => {
 
     expect(findMatchesMock).toHaveBeenCalledWith(ceo.id, "CEO");
     expect(buildRationaleMock).toHaveBeenCalledTimes(2);
-  });
+  }, 30000); // Increased timeout for database operations
 });
 
 

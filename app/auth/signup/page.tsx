@@ -18,7 +18,11 @@ function SignUpForm() {
     e.preventDefault();
     setLoading(true);
     try {
-      await signIn("email", { email, redirect: false });
+      // Include role in callbackUrl so it's preserved after authentication
+      const callbackUrl = selectedRole 
+        ? `/onboarding/role?role=${selectedRole}`
+        : "/onboarding/role";
+      await signIn("email", { email, redirect: false, callbackUrl });
       setSent(true);
     } finally {
       setLoading(false);

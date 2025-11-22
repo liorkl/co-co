@@ -56,7 +56,7 @@ export default function LandingPage() {
             <Link 
               href="/auth/signin" 
               className="font-medium text-black hover:underline"
-              onClick={() => handleCTAClick("CEO", "hero_signin")}
+              onClick={() => trackCTAClick("hero_signin")}
             >
               Sign in
             </Link>
