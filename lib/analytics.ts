@@ -40,3 +40,4 @@ export function trackCTAClick(cta: string, role?: 'CEO' | 'CTO'): void {
   track({ type: 'cta_click', cta, role });
 }
 
+
