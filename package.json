@@ -36,6 +36,10 @@
     "github:pr-details": "./scripts/github-api-helper.sh pr-details",
     "github:mcp:setup": "./scripts/setup-github-mcp.sh",
     "github:copilot:setup": "./scripts/setup-gh-copilot.sh",
+    "task:setup": "./scripts/setup-task-management.sh",
+    "task:create": "./scripts/task-create.sh",
+    "task:update": "./scripts/task-update.sh",
+    "task:list": "./scripts/task-list.sh",
     "postinstall": "node ./scripts/run-setup-hooks.js",
     "hooks:status": "node ./scripts/hooks-status.js"
   },
