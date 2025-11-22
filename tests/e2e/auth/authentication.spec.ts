@@ -72,7 +72,10 @@ test.describe("Authentication flows", () => {
 
     await page.getByRole("link", { name: "Sign out" }).click();
     await page.waitForURL(/\/$/, { timeout: 10_000 });
-    await expect(page.getByRole("heading", { name: "FounderFinder" })).toBeVisible();
+    // Check for new landing page structure
+    await expect(
+      page.getByRole("heading", { name: /Find Your Perfect/i })
+    ).toBeVisible();
   });
 });
 

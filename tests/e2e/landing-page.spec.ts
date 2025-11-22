@@ -40,13 +40,16 @@ test.describe("Landing page", () => {
   test("displays value bullets section", async ({ page }) => {
     await page.goto("/");
     
-    // Check value bullets are visible
-    await expect(page.getByText(/AI-Powered Matching/i)).toBeVisible();
-    await expect(page.getByText(/Fast Onboarding/i)).toBeVisible();
-    await expect(page.getByText(/Privacy First/i)).toBeVisible();
-    await expect(page.getByText(/Quality Over Quantity/i)).toBeVisible();
-    await expect(page.getByText(/Curated Introductions/i)).toBeVisible();
-    await expect(page.getByText(/Free to Start/i)).toBeVisible();
+    // Scroll to value bullets section (they're below the fold)
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight / 2));
+    
+    // Check value bullets are visible (using role heading for better reliability)
+    await expect(page.getByRole("heading", { name: /AI-Powered Matching/i })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /Fast Onboarding/i })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /Privacy First/i })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /Quality Over Quantity/i })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /Curated Introductions/i })).toBeVisible();
+    await expect(page.getByRole("heading", { name: /Free to Start/i })).toBeVisible();
   });
 
   test("displays testimonials section", async ({ page }) => {
