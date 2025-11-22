@@ -1,10 +1,10 @@
 "use client";
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 
-export default function SignUpPage() {
+function SignUpForm() {
   const searchParams = useSearchParams();
   const roleParam = searchParams.get("role");
   const [email, setEmail] = useState("");
@@ -133,6 +133,23 @@ export default function SignUpPage() {
       </div>
       </div>
     </div>
+  );
+}
+
+export default function SignUpPage() {
+  return (
+    <Suspense fallback={
+      <div className="mx-auto max-w-md px-4 py-8">
+        <div className="space-y-6">
+          <div>
+            <h1 className="mb-2 text-2xl font-semibold">Create your account</h1>
+            <p className="text-gray-600">Loading...</p>
+          </div>
+        </div>
+      </div>
+    }>
+      <SignUpForm />
+    </Suspense>
   );
 }
 
