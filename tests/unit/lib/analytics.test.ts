@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { track, trackPageView, trackCTAClick } from "@/lib/analytics";
 
 describe("Analytics", () => {
@@ -8,10 +8,14 @@ describe("Analytics", () => {
     vi.spyOn(console, "log").mockImplementation(() => {});
   });
 
+  afterEach(() => {
+    vi.unstubAllEnvs();
+  });
+
   describe("track", () => {
     it("logs events in development mode", () => {
       const consoleSpy = vi.spyOn(console, "log");
-      process.env.NODE_ENV = "development";
+      vi.stubEnv("NODE_ENV", "development");
       
       track({ type: "page_view", path: "/test" });
       
@@ -23,7 +27,7 @@ describe("Analytics", () => {
 
     it("does not log in production mode", () => {
       const consoleSpy = vi.spyOn(console, "log");
-      process.env.NODE_ENV = "production";
+      vi.stubEnv("NODE_ENV", "production");
       
       track({ type: "page_view", path: "/test" });
       
@@ -34,7 +38,7 @@ describe("Analytics", () => {
   describe("trackPageView", () => {
     it("tracks page view events", () => {
       const consoleSpy = vi.spyOn(console, "log");
-      process.env.NODE_ENV = "development";
+      vi.stubEnv("NODE_ENV", "development");
       
       trackPageView("/landing");
       
@@ -48,7 +52,7 @@ describe("Analytics", () => {
   describe("trackCTAClick", () => {
     it("tracks CTA clicks without role", () => {
       const consoleSpy = vi.spyOn(console, "log");
-      process.env.NODE_ENV = "development";
+      vi.stubEnv("NODE_ENV", "development");
       
       trackCTAClick("hero_signup");
       
@@ -60,7 +64,7 @@ describe("Analytics", () => {
 
     it("tracks CTA clicks with role", () => {
       const consoleSpy = vi.spyOn(console, "log");
-      process.env.NODE_ENV = "development";
+      vi.stubEnv("NODE_ENV", "development");
       
       trackCTAClick("hero_ceo_signup", "CEO");
       
