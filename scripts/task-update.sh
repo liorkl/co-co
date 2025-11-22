@@ -69,7 +69,6 @@ while [ $# -gt 0 ]; do
       # Remove old status labels (each label needs its own --remove-label flag)
       gh issue edit "$ISSUE_NUMBER" \
         --remove-label "status:backlog" \
-        --remove-label "status:todo" \
         --remove-label "status:in-progress" \
         --remove-label "status:review" \
         --remove-label "status:blocked" \
