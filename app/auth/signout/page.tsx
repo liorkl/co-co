@@ -8,7 +8,7 @@ export default function SignOutPage() {
   }, []);
 
   return (
-    <div className="max-w-md">
+    <div className="mx-auto max-w-md px-4 py-8">
       <p>Signing you out...</p>
     </div>
   );
