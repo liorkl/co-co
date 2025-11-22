@@ -18,7 +18,8 @@ export default function RolePage() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto max-w-3xl px-4 py-8">
+      <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Select your role</h1>
         <Link 
@@ -43,6 +44,7 @@ export default function RolePage() {
         >
           {loading === "CTO" ? "Loading..." : "I am a CTO"}
         </button>
+      </div>
       </div>
     </div>
   );
