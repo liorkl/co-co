@@ -28,7 +28,8 @@ export default function CEOOnboarding() {
   }
 
   return (
-    <form onSubmit={submit} className="space-y-4 max-w-xl">
+    <div className="mx-auto max-w-xl px-4 py-8">
+      <form onSubmit={submit} className="space-y-4">
       <h1 className="text-2xl font-semibold">CEO interview</h1>
       {[
         ["name", "Your name"],
@@ -59,7 +60,8 @@ export default function CEOOnboarding() {
       <button className="rounded bg-black px-4 py-2 text-white" disabled={saving}>
         {saving ? "Saving..." : "Save and see matches"}
       </button>
-    </form>
+      </form>
+    </div>
   );
 }
 

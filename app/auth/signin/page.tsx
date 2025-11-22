@@ -21,7 +21,8 @@ export default function SignInPage() {
 
   if (sent) {
     return (
-      <div className="max-w-md space-y-4">
+      <div className="mx-auto max-w-md px-4 py-8">
+        <div className="space-y-4">
         <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
           <h2 className="mb-2 text-lg font-semibold text-blue-800">Check your email!</h2>
           <p className="text-blue-700">
@@ -39,12 +40,14 @@ export default function SignInPage() {
           </button>
           .
         </p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-md space-y-6">
+    <div className="mx-auto max-w-md px-4 py-8">
+      <div className="space-y-6">
       <div>
         <h1 className="mb-2 text-2xl font-semibold">Sign in</h1>
         <p className="text-gray-600">
@@ -84,6 +87,7 @@ export default function SignInPage() {
             Sign up
           </Link>
         </p>
+        </div>
       </div>
     </div>
   );

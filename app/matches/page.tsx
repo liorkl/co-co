@@ -75,8 +75,9 @@ export default function MatchesPage() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
+    <div className="mx-auto max-w-4xl px-4 py-8">
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold">Your Matches</h1>
           <p className="mt-1 text-sm text-gray-600">
@@ -265,6 +266,7 @@ export default function MatchesPage() {
           })}
         </div>
       )}
+      </div>
     </div>
   );
 }
