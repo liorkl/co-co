@@ -1,11 +1,13 @@
 "use client";
-import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { useState, Suspense, useEffect } from "react";
 import Link from "next/link";
 
-export default function RolePage() {
+function RolePageContent() {
   const [loading, setLoading] = useState<string | null>(null);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const roleParam = searchParams.get("role");
 
   async function choose(role: "CEO" | "CTO") {
     setLoading(role);
@@ -16,9 +18,18 @@ export default function RolePage() {
     });
     router.push(role === "CEO" ? "/onboarding/ceo" : "/onboarding/cto");
   }
+  
+  // Auto-select role if provided in query params
+  useEffect(() => {
+    if ((roleParam === "CEO" || roleParam === "CTO") && !loading) {
+      choose(roleParam);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [roleParam]);
 
   return (
-    <div className="space-y-6">
+    <div className="mx-auto max-w-3xl px-4 py-8">
+      <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Select your role</h1>
         <Link 
@@ -44,7 +55,23 @@ export default function RolePage() {
           {loading === "CTO" ? "Loading..." : "I am a CTO"}
         </button>
       </div>
+      </div>
     </div>
+  );
+}
+
+export default function RolePage() {
+  return (
+    <Suspense fallback={
+      <div className="mx-auto max-w-3xl px-4 py-8">
+        <div className="space-y-6">
+          <h1 className="text-2xl font-semibold">Select your role</h1>
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    }>
+      <RolePageContent />
+    </Suspense>
   );
 }
 

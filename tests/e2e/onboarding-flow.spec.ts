@@ -179,7 +179,10 @@ test.describe("Onboarding journeys", () => {
     // User can sign out and return to landing page
     await page.getByRole("link", { name: "Sign out" }).click();
     await page.waitForURL(/\/$/, { timeout: 15_000 });
-    await expect(page.getByRole("heading", { name: "FounderFinder" })).toBeVisible();
+    // Check for new landing page structure
+    await expect(
+      page.getByRole("heading", { name: /Find Your Perfect/i })
+    ).toBeVisible();
   });
 
   test("CTO completes onboarding and sees matched CEOs", async ({ page, request }) => {
