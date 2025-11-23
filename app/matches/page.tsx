@@ -61,23 +61,31 @@ export default function MatchesPage() {
       // Load existing intro request statuses
       // Only map requests where current user is the requester (not target)
       // This ensures we map statuses to the correct match userIds (targetId)
-      const requestsRes = await fetch("/api/intro/request");
-      if (requestsRes.ok) {
-        const requestsData = await requestsRes.json();
-        const statusMap: Record<string, IntroRequestStatus> = {};
-        const currentUserId = requestsData.currentUserId;
-        
-        requestsData.requests?.forEach((req: any) => {
-          // Only map requests where current user is the requester
-          // This ensures targetId matches the match.userId we're displaying
-          if (req.requesterId === currentUserId && req.targetId) {
-            const status = req.status?.toLowerCase() as IntroRequestStatus;
-            if (status === "pending" || status === "approved" || status === "rejected" || status === "completed") {
-              statusMap[req.targetId] = status;
+      try {
+        const requestsRes = await fetch("/api/intro/request");
+        if (requestsRes.ok) {
+          const requestsData = await requestsRes.json();
+          const statusMap: Record<string, IntroRequestStatus> = {};
+          const currentUserId = requestsData.currentUserId;
+          
+          requestsData.requests?.forEach((req: any) => {
+            // Only map requests where current user is the requester
+            // This ensures targetId matches the match.userId we're displaying
+            if (req.requesterId === currentUserId && req.targetId) {
+              const status = req.status?.toLowerCase() as IntroRequestStatus;
+              if (status === "pending" || status === "approved" || status === "rejected" || status === "completed") {
+                statusMap[req.targetId] = status;
+              }
             }
-          }
-        });
-        setRequestStatuses(statusMap);
+          });
+          setRequestStatuses(statusMap);
+        } else {
+          // Log error but don't block UI - matches will still display
+          console.error("Failed to load intro request statuses:", requestsRes.status, requestsRes.statusText);
+        }
+      } catch (error) {
+        // Network error or other exception - log but don't block UI
+        console.error("Error loading intro request statuses:", error);
       }
     })();
   }, []);
@@ -137,6 +145,13 @@ export default function MatchesPage() {
           const data = await res.json();
           alert(data.error || "Failed to update feedback");
         } else {
+          // Parse response to get updated request status
+          const patchData = await res.json();
+          // Update state to reflect the current status (status shouldn't change, but ensure consistency)
+          if (patchData.request?.status) {
+            const status = patchData.request.status.toLowerCase() as IntroRequestStatus;
+            setRequestStatuses((prev) => ({ ...prev, [targetUserId]: status }));
+          }
           // Show success feedback (optional - could be a toast notification)
           console.log("Feedback updated successfully");
         }
