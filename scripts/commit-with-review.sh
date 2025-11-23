@@ -135,8 +135,20 @@ wait_for_agent_review() {
   info "Waiting for AGENT REVIEW on PR #$pr_number..."
   info "Checking for BugBot comments every ${REVIEW_CHECK_INTERVAL}s (max ${MAX_REVIEW_WAIT_TIME}s)..."
   
+  # Get initial bug count to distinguish old bugs from new ones
+  local initial_bug_count=0
+  if [ -f "./scripts/check-pr-bugs.sh" ]; then
+    local initial_bug_count_output
+    initial_bug_count_output=$(./scripts/check-pr-bugs.sh "$pr_number" 2>&1)
+    local initial_bug_check_exit=$?
+    
+    if [ $initial_bug_check_exit -eq 0 ]; then
+      initial_bug_count="$initial_bug_count_output"
+    fi
+  fi
+  
   local elapsed=0
-  local last_bug_count=0
+  local last_bug_count="$initial_bug_count"
   
   while [ $elapsed -lt $MAX_REVIEW_WAIT_TIME ]; do
     sleep $REVIEW_CHECK_INTERVAL
@@ -156,10 +168,12 @@ wait_for_agent_review() {
       
       local bug_count="$bug_count_output"
       
-      if [ "$bug_count" != "0" ]; then
-        # Report bugs whenever they exist, not just on first detection or count change
-        error "AGENT REVIEW found $bug_count bug(s)!"
-        return 1  # Bugs found
+      # Only report bugs if the count INCREASED (new bugs from current commit)
+      # If bugs exist but count hasn't increased, those are old bugs - continue waiting
+      if [ "$bug_count" -gt "$initial_bug_count" ]; then
+        local new_bugs=$((bug_count - initial_bug_count))
+        error "AGENT REVIEW found $new_bugs new bug(s) (total: $bug_count, existing: $initial_bug_count)!"
+        return 1  # New bugs found
       fi
       
       last_bug_count="$bug_count"
@@ -173,9 +187,11 @@ wait_for_agent_review() {
         if [ -n "$owner" ] && [ -n "$repo_name" ]; then
           local bug_count=$(gh api "repos/$owner/$repo_name/pulls/$pr_number/comments" --jq '[.[] | select(.user.login == "cursor[bot]") | select(.body | contains("### Bug:"))] | length' 2>/dev/null || echo "0")
           
-          if [ "$bug_count" != "0" ]; then
-            error "AGENT REVIEW found $bug_count bug(s)!"
-            return 1  # Bugs found
+          # Only report bugs if the count INCREASED (new bugs from current commit)
+          if [ "$bug_count" -gt "$initial_bug_count" ]; then
+            local new_bugs=$((bug_count - initial_bug_count))
+            error "AGENT REVIEW found $new_bugs new bug(s) (total: $bug_count, existing: $initial_bug_count)!"
+            return 1  # New bugs found
           fi
         fi
       fi
@@ -201,9 +217,11 @@ wait_for_agent_review() {
     fi
     
     local final_bug_count="$final_bug_count_output"
-    if [ "$final_bug_count" != "0" ]; then
-      error "AGENT REVIEW found $final_bug_count bug(s) after timeout!"
-      return 1  # Bugs found
+    # Only report bugs if the count INCREASED (new bugs from current commit)
+    if [ "$final_bug_count" -gt "$initial_bug_count" ]; then
+      local new_bugs=$((final_bug_count - initial_bug_count))
+      error "AGENT REVIEW found $new_bugs new bug(s) after timeout (total: $final_bug_count, existing: $initial_bug_count)!"
+      return 1  # New bugs found
     fi
   else
     warning "check-pr-bugs.sh not found. Cannot verify bug status after timeout."
@@ -289,6 +307,12 @@ push_changes() {
 
 # Main workflow
 main() {
+  # Check for commit message argument before shifting
+  if [ $# -eq 0 ]; then
+    error "Usage: $0 <commit-message> [files...]"
+    exit 1
+  fi
+  
   local commit_msg="$1"
   shift
   local files=("$@")
@@ -341,6 +365,8 @@ main() {
   local iteration=0
   local commit_iteration=0  # Track actual commits made (separate from loop iteration)
   local has_uncommitted_fixes=0
+  # Track files from initial commit to reuse for bug fix commits
+  local tracked_files=("${files[@]}")
   
   while [ $iteration -lt $MAX_BUG_FIX_ITERATIONS ]; do
     iteration=$((iteration + 1))
@@ -357,7 +383,8 @@ main() {
       echo ""
       
       # Commit fixes (use commit_iteration + 1 for the message since we'll increment after success)
-      commit_changes "fix: address AGENT REVIEW feedback (iteration $((commit_iteration + 1)))"
+      # Reuse the same files from initial commit to avoid staging unrelated changes
+      commit_changes "fix: address AGENT REVIEW feedback (iteration $((commit_iteration + 1)))" "${tracked_files[@]}"
       local commit_result=$?
       
       if [ $commit_result -eq 2 ]; then
@@ -480,7 +507,8 @@ main() {
       echo ""
       
       # Commit fixes (use commit_iteration + 1 for the message since we'll increment after success)
-      commit_changes "fix: address AGENT REVIEW feedback (iteration $((commit_iteration + 1)))"
+      # Reuse the same files from initial commit to avoid staging unrelated changes
+      commit_changes "fix: address AGENT REVIEW feedback (iteration $((commit_iteration + 1)))" "${tracked_files[@]}"
       local commit_result=$?
       
       if [ $commit_result -eq 2 ]; then
