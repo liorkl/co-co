@@ -40,6 +40,7 @@
     "task:create": "./scripts/task-create.sh",
     "task:update": "./scripts/task-update.sh",
     "task:list": "./scripts/task-list.sh",
+    "commit:review": "./scripts/commit-with-review.sh",
     "postinstall": "node ./scripts/run-setup-hooks.js",
     "hooks:status": "node ./scripts/hooks-status.js"
   },
