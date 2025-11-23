@@ -138,11 +138,83 @@ export async function GET() {
       },
     });
     
-    return NextResponse.json({ requests });
+    return NextResponse.json({ 
+      requests,
+      currentUserId: userId, // Include current user ID for client-side filtering
+    });
   } catch (error: any) {
     console.error("Error fetching intro requests:", error);
     return NextResponse.json(
       { error: error.message || "Failed to fetch intro requests" },
+      { status: 500 }
+    );
+  }
+}
+
+// Update feedback/rating on an existing intro request
+export async function PATCH(req: Request) {
+  const session = await auth();
+  if (!session || !(session as any).userId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  
+  const userId = (session as any).userId as string;
+  
+  // Rate limit by user ID
+  const res = await limit(`intro:${userId}`, "api");
+  if (!res.success) {
+    return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });
+  }
+  
+  try {
+    const { targetId, feedback, rating } = await req.json();
+    
+    if (!targetId) {
+      return NextResponse.json({ error: "targetId is required" }, { status: 400 });
+    }
+    
+    // Find existing request where user is requester
+    const existingRequest = await prisma.introRequest.findUnique({
+      where: {
+        requesterId_targetId: {
+          requesterId: userId,
+          targetId: targetId,
+        },
+      },
+    });
+    
+    if (!existingRequest) {
+      return NextResponse.json(
+        { error: "Intro request not found. Please request an intro first." },
+        { status: 404 }
+      );
+    }
+    
+    // Update feedback and/or rating
+    const updatedRequest = await prisma.introRequest.update({
+      where: {
+        id: existingRequest.id,
+      },
+      data: {
+        ...(feedback !== undefined && { feedback }),
+        ...(rating !== undefined && { rating }),
+      },
+    });
+    
+    return NextResponse.json({
+      success: true,
+      request: {
+        id: updatedRequest.id,
+        status: updatedRequest.status,
+        feedback: updatedRequest.feedback,
+        rating: updatedRequest.rating,
+        updatedAt: updatedRequest.updatedAt,
+      },
+    });
+  } catch (error: any) {
+    console.error("Error updating intro request feedback:", error);
+    return NextResponse.json(
+      { error: error.message || "Failed to update feedback" },
       { status: 500 }
     );
   }

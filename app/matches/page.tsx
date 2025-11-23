@@ -59,13 +59,18 @@ export default function MatchesPage() {
       setLoading(false);
       
       // Load existing intro request statuses
+      // Only map requests where current user is the requester (not target)
+      // This ensures we map statuses to the correct match userIds (targetId)
       const requestsRes = await fetch("/api/intro/request");
       if (requestsRes.ok) {
         const requestsData = await requestsRes.json();
         const statusMap: Record<string, IntroRequestStatus> = {};
+        const currentUserId = requestsData.currentUserId;
+        
         requestsData.requests?.forEach((req: any) => {
-          if (req.requesterId && req.targetId) {
-            // Map status to our type
+          // Only map requests where current user is the requester
+          // This ensures targetId matches the match.userId we're displaying
+          if (req.requesterId === currentUserId && req.targetId) {
             const status = req.status?.toLowerCase() as IntroRequestStatus;
             if (status === "pending" || status === "approved" || status === "rejected") {
               statusMap[req.targetId] = status;
@@ -107,15 +112,46 @@ export default function MatchesPage() {
   
   const handleFeedback = async (targetUserId: string, rating: 1 | 2) => {
     try {
-      const res = await fetch("/api/intro/request", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ targetId: targetUserId, rating }),
-      });
+      // Check if intro request exists first
+      const checkRes = await fetch("/api/intro/request");
+      if (!checkRes.ok) {
+        alert("Failed to check existing requests");
+        return;
+      }
       
-      if (!res.ok) {
-        const data = await res.json();
-        alert(data.error || "Failed to submit feedback");
+      const checkData = await checkRes.json();
+      const currentUserId = checkData.currentUserId;
+      const existingRequest = checkData.requests?.find(
+        (req: any) => req.requesterId === currentUserId && req.targetId === targetUserId
+      );
+      
+      if (existingRequest) {
+        // Update existing request with feedback
+        const res = await fetch("/api/intro/request", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ targetId: targetUserId, rating }),
+        });
+        
+        if (!res.ok) {
+          const data = await res.json();
+          alert(data.error || "Failed to update feedback");
+        }
+      } else {
+        // No existing request - create one with feedback
+        const res = await fetch("/api/intro/request", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ targetId: targetUserId, rating }),
+        });
+        
+        if (res.ok) {
+          // Update status to pending since we created a request
+          setRequestStatuses((prev) => ({ ...prev, [targetUserId]: "pending" }));
+        } else {
+          const data = await res.json();
+          alert(data.error || "Failed to submit feedback");
+        }
       }
     } catch (error) {
       console.error("Error submitting feedback:", error);
