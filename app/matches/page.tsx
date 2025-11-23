@@ -27,6 +27,8 @@ type Match = {
   } | null;
 };
 
+type IntroRequestStatus = "none" | "pending" | "approved" | "rejected" | "loading";
+
 function getMatchQuality(score: number): { label: string; color: string; bgColor: string } {
   if (score >= 0.8) {
     return { label: "Excellent Match", color: "text-green-700", bgColor: "bg-green-50" };
@@ -46,6 +48,7 @@ function formatScore(score: number): string {
 export default function MatchesPage() {
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
+  const [requestStatuses, setRequestStatuses] = useState<Record<string, IntroRequestStatus>>({});
 
   useEffect(() => {
     (async () => {
@@ -54,8 +57,71 @@ export default function MatchesPage() {
       const data = await res.json();
       setMatches(data.matches ?? []);
       setLoading(false);
+      
+      // Load existing intro request statuses
+      const requestsRes = await fetch("/api/intro/request");
+      if (requestsRes.ok) {
+        const requestsData = await requestsRes.json();
+        const statusMap: Record<string, IntroRequestStatus> = {};
+        requestsData.requests?.forEach((req: any) => {
+          if (req.requesterId && req.targetId) {
+            // Map status to our type
+            const status = req.status?.toLowerCase() as IntroRequestStatus;
+            if (status === "pending" || status === "approved" || status === "rejected") {
+              statusMap[req.targetId] = status;
+            }
+          }
+        });
+        setRequestStatuses(statusMap);
+      }
     })();
   }, []);
+  
+  const handleRequestIntro = async (targetUserId: string) => {
+    setRequestStatuses((prev) => ({ ...prev, [targetUserId]: "loading" }));
+    
+    try {
+      const res = await fetch("/api/intro/request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ targetId: targetUserId }),
+      });
+      
+      const data = await res.json();
+      
+      if (res.ok) {
+        setRequestStatuses((prev) => ({ ...prev, [targetUserId]: "pending" }));
+      } else if (res.status === 409) {
+        // Request already exists
+        setRequestStatuses((prev) => ({ ...prev, [targetUserId]: data.request?.status?.toLowerCase() || "pending" }));
+      } else {
+        alert(data.error || "Failed to request intro");
+        setRequestStatuses((prev) => ({ ...prev, [targetUserId]: "none" }));
+      }
+    } catch (error) {
+      console.error("Error requesting intro:", error);
+      alert("Failed to request intro. Please try again.");
+      setRequestStatuses((prev) => ({ ...prev, [targetUserId]: "none" }));
+    }
+  };
+  
+  const handleFeedback = async (targetUserId: string, rating: 1 | 2) => {
+    try {
+      const res = await fetch("/api/intro/request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ targetId: targetUserId, rating }),
+      });
+      
+      if (!res.ok) {
+        const data = await res.json();
+        alert(data.error || "Failed to submit feedback");
+      }
+    } catch (error) {
+      console.error("Error submitting feedback:", error);
+      alert("Failed to submit feedback. Please try again.");
+    }
+  };
 
   if (loading) {
     return (
@@ -261,6 +327,55 @@ export default function MatchesPage() {
                     <span className="font-medium">Commitment:</span> {match.commitment}
                   </div>
                 )}
+
+                {/* Action buttons */}
+                <div className="mt-6 flex items-center gap-3 border-t border-gray-200 pt-4">
+                  {requestStatuses[match.userId] === "none" || !requestStatuses[match.userId] ? (
+                    <>
+                      <button
+                        onClick={() => handleRequestIntro(match.userId)}
+                        className="flex-1 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                      >
+                        Request Intro
+                      </button>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleFeedback(match.userId, 2)}
+                          className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                          title="Thumbs up"
+                        >
+                          👍
+                        </button>
+                        <button
+                          onClick={() => handleFeedback(match.userId, 1)}
+                          className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                          title="Thumbs down"
+                        >
+                          👎
+                        </button>
+                      </div>
+                    </>
+                  ) : requestStatuses[match.userId] === "loading" ? (
+                    <button
+                      disabled
+                      className="flex-1 rounded-lg bg-gray-400 px-4 py-2 text-sm font-medium text-white cursor-not-allowed"
+                    >
+                      Processing...
+                    </button>
+                  ) : requestStatuses[match.userId] === "pending" ? (
+                    <div className="flex-1 rounded-lg bg-yellow-50 border border-yellow-200 px-4 py-2 text-sm font-medium text-yellow-800">
+                      ⏳ Intro request pending moderation
+                    </div>
+                  ) : requestStatuses[match.userId] === "approved" ? (
+                    <div className="flex-1 rounded-lg bg-green-50 border border-green-200 px-4 py-2 text-sm font-medium text-green-800">
+                      ✅ Intro request approved
+                    </div>
+                  ) : requestStatuses[match.userId] === "rejected" ? (
+                    <div className="flex-1 rounded-lg bg-red-50 border border-red-200 px-4 py-2 text-sm font-medium text-red-800">
+                      ❌ Intro request rejected
+                    </div>
+                  ) : null}
+                </div>
               </div>
             );
           })}

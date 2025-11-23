@@ -35,6 +35,8 @@ model User {
   embeddings          Embedding[]
   ceoMatches          Match[]    @relation("CeoMatches")
   ctoMatches          Match[]    @relation("CtoMatches")
+  introRequests       IntroRequest[] @relation("IntroRequests")
+  introTargets        IntroRequest[] @relation("IntroTargets")
 }
 
 model Account {
@@ -149,6 +151,34 @@ model Match {
 
   @@index([ceoUserId])
   @@index([ctoUserId])
+}
+
+enum IntroRequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  COMPLETED
+}
+
+model IntroRequest {
+  id            String            @id @default(cuid())
+  requester     User              @relation("IntroRequests", fields: [requesterId], references: [id])
+  requesterId   String
+  target        User              @relation("IntroTargets", fields: [targetId], references: [id])
+  targetId      String
+  status        IntroRequestStatus @default(PENDING)
+  feedback      String?           // Optional feedback from requester
+  rating        Int?              // Optional rating (1-5 or thumbs up/down: 1 or 2)
+  adminNotes    String?           // Admin moderation notes
+  createdAt     DateTime          @default(now())
+  updatedAt     DateTime          @updatedAt
+  reviewedAt    DateTime?         // When admin reviewed
+  reviewedBy    String?           // Admin user ID who reviewed
+
+  @@index([requesterId])
+  @@index([targetId])
+  @@index([status])
+  @@unique([requesterId, targetId]) // Prevent duplicate requests
 }
 
 
