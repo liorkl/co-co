@@ -163,7 +163,8 @@ export default function MatchesPage() {
               body: JSON.stringify({ targetId: targetUserId, rating }),
             });
             if (patchRes.ok) {
-              setRequestStatuses((prev) => ({ ...prev, [targetUserId]: data.request?.status?.toLowerCase() || "pending" }));
+              const patchData = await patchRes.json();
+              setRequestStatuses((prev) => ({ ...prev, [targetUserId]: patchData.request?.status?.toLowerCase() || "pending" }));
             } else {
               alert("Failed to update feedback");
             }
