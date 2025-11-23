@@ -117,7 +117,12 @@ export default function MultiStepForm({
     }
 
     if (currentStep < steps.length - 1) {
-      setCurrentStep(currentStep + 1);
+      const nextStep = currentStep + 1;
+      setCurrentStep(nextStep);
+      // If the next step is the preview step (last step), set isPreview to true
+      if (nextStep === steps.length - 1) {
+        setIsPreview(true);
+      }
     } else {
       setIsPreview(true);
     }
