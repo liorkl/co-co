@@ -27,6 +27,8 @@ type Match = {
   } | null;
 };
 
+type IntroRequestStatus = "none" | "pending" | "approved" | "rejected" | "completed" | "loading";
+
 function getMatchQuality(score: number): { label: string; color: string; bgColor: string } {
   if (score >= 0.8) {
     return { label: "Excellent Match", color: "text-green-700", bgColor: "bg-green-50" };
@@ -46,6 +48,7 @@ function formatScore(score: number): string {
 export default function MatchesPage() {
   const [matches, setMatches] = useState<Match[]>([]);
   const [loading, setLoading] = useState(true);
+  const [requestStatuses, setRequestStatuses] = useState<Record<string, IntroRequestStatus>>({});
 
   useEffect(() => {
     (async () => {
@@ -54,8 +57,142 @@ export default function MatchesPage() {
       const data = await res.json();
       setMatches(data.matches ?? []);
       setLoading(false);
+      
+      // Load existing intro request statuses
+      // Only map requests where current user is the requester (not target)
+      // This ensures we map statuses to the correct match userIds (targetId)
+      try {
+        const requestsRes = await fetch("/api/intro/request");
+        if (requestsRes.ok) {
+          const requestsData = await requestsRes.json();
+          const statusMap: Record<string, IntroRequestStatus> = {};
+          const currentUserId = requestsData.currentUserId;
+          
+          requestsData.requests?.forEach((req: any) => {
+            // Only map requests where current user is the requester
+            // This ensures targetId matches the match.userId we're displaying
+            if (req.requesterId === currentUserId && req.targetId) {
+              const status = req.status?.toLowerCase() as IntroRequestStatus;
+              if (status === "pending" || status === "approved" || status === "rejected" || status === "completed") {
+                statusMap[req.targetId] = status;
+              }
+            }
+          });
+          setRequestStatuses(statusMap);
+        } else {
+          // Log error but don't block UI - matches will still display
+          console.error("Failed to load intro request statuses:", requestsRes.status, requestsRes.statusText);
+        }
+      } catch (error) {
+        // Network error or other exception - log but don't block UI
+        console.error("Error loading intro request statuses:", error);
+      }
     })();
   }, []);
+  
+  const handleRequestIntro = async (targetUserId: string) => {
+    setRequestStatuses((prev) => ({ ...prev, [targetUserId]: "loading" }));
+    
+    try {
+      const res = await fetch("/api/intro/request", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ targetId: targetUserId }),
+      });
+      
+      const data = await res.json();
+      
+      if (res.ok) {
+        setRequestStatuses((prev) => ({ ...prev, [targetUserId]: "pending" }));
+      } else if (res.status === 409) {
+        // Request already exists
+        setRequestStatuses((prev) => ({ ...prev, [targetUserId]: data.request?.status?.toLowerCase() || "pending" }));
+      } else {
+        alert(data.error || "Failed to request intro");
+        setRequestStatuses((prev) => ({ ...prev, [targetUserId]: "none" }));
+      }
+    } catch (error) {
+      console.error("Error requesting intro:", error);
+      alert("Failed to request intro. Please try again.");
+      setRequestStatuses((prev) => ({ ...prev, [targetUserId]: "none" }));
+    }
+  };
+  
+  const handleFeedback = async (targetUserId: string, rating: 1 | 2) => {
+    try {
+      // Check if intro request exists first
+      const checkRes = await fetch("/api/intro/request");
+      if (!checkRes.ok) {
+        alert("Failed to check existing requests");
+        return;
+      }
+      
+      const checkData = await checkRes.json();
+      const currentUserId = checkData.currentUserId;
+      const existingRequest = checkData.requests?.find(
+        (req: any) => req.requesterId === currentUserId && req.targetId === targetUserId
+      );
+      
+      if (existingRequest) {
+        // Update existing request with feedback
+        const res = await fetch("/api/intro/request", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ targetId: targetUserId, rating }),
+        });
+        
+        if (!res.ok) {
+          const data = await res.json();
+          alert(data.error || "Failed to update feedback");
+        } else {
+          // Parse response to get updated request status
+          const patchData = await res.json();
+          // Update state to reflect the current status (status shouldn't change, but ensure consistency)
+          if (patchData.request?.status) {
+            const status = patchData.request.status.toLowerCase() as IntroRequestStatus;
+            setRequestStatuses((prev) => ({ ...prev, [targetUserId]: status }));
+          }
+          // Show success feedback (optional - could be a toast notification)
+          console.log("Feedback updated successfully");
+        }
+      } else {
+        // No existing request - create one with the rating
+        // This allows users to express interest (thumbs up) or disinterest (thumbs down)
+        // via feedback buttons, which creates an intro request with the rating
+        const res = await fetch("/api/intro/request", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ targetId: targetUserId, rating }),
+        });
+        
+        if (res.ok) {
+          // Update status to pending since we created a request
+          setRequestStatuses((prev) => ({ ...prev, [targetUserId]: "pending" }));
+        } else {
+          const data = await res.json();
+          if (res.status === 409) {
+            // Request was created between check and create - update it instead
+            const patchRes = await fetch("/api/intro/request", {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ targetId: targetUserId, rating }),
+            });
+            if (patchRes.ok) {
+              const patchData = await patchRes.json();
+              setRequestStatuses((prev) => ({ ...prev, [targetUserId]: patchData.request?.status?.toLowerCase() || "pending" }));
+            } else {
+              alert("Failed to update feedback");
+            }
+          } else {
+            alert(data.error || "Failed to submit feedback");
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error submitting feedback:", error);
+      alert("Failed to submit feedback. Please try again.");
+    }
+  };
 
   if (loading) {
     return (
@@ -261,6 +398,59 @@ export default function MatchesPage() {
                     <span className="font-medium">Commitment:</span> {match.commitment}
                   </div>
                 )}
+
+                {/* Action buttons */}
+                <div className="mt-6 flex items-center gap-3 border-t border-gray-200 pt-4">
+                  {requestStatuses[match.userId] === "none" || !requestStatuses[match.userId] ? (
+                    <>
+                      <button
+                        onClick={() => handleRequestIntro(match.userId)}
+                        className="flex-1 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                      >
+                        Request Intro
+                      </button>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => handleFeedback(match.userId, 2)}
+                          className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                          title="Thumbs up"
+                        >
+                          👍
+                        </button>
+                        <button
+                          onClick={() => handleFeedback(match.userId, 1)}
+                          className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                          title="Thumbs down"
+                        >
+                          👎
+                        </button>
+                      </div>
+                    </>
+                  ) : requestStatuses[match.userId] === "loading" ? (
+                    <button
+                      disabled
+                      className="flex-1 rounded-lg bg-gray-400 px-4 py-2 text-sm font-medium text-white cursor-not-allowed"
+                    >
+                      Processing...
+                    </button>
+                  ) : requestStatuses[match.userId] === "pending" ? (
+                    <div className="flex-1 rounded-lg bg-yellow-50 border border-yellow-200 px-4 py-2 text-sm font-medium text-yellow-800">
+                      ⏳ Intro request pending moderation
+                    </div>
+                  ) : requestStatuses[match.userId] === "approved" ? (
+                    <div className="flex-1 rounded-lg bg-green-50 border border-green-200 px-4 py-2 text-sm font-medium text-green-800">
+                      ✅ Intro request approved
+                    </div>
+                  ) : requestStatuses[match.userId] === "rejected" ? (
+                    <div className="flex-1 rounded-lg bg-red-50 border border-red-200 px-4 py-2 text-sm font-medium text-red-800">
+                      ❌ Intro request rejected
+                    </div>
+                  ) : requestStatuses[match.userId] === "completed" ? (
+                    <div className="flex-1 rounded-lg bg-blue-50 border border-blue-200 px-4 py-2 text-sm font-medium text-blue-800">
+                      ✅ Intro completed
+                    </div>
+                  ) : null}
+                </div>
               </div>
             );
           })}
