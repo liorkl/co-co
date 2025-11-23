@@ -141,12 +141,36 @@ export default function MatchesPage() {
           console.log("Feedback updated successfully");
         }
       } else {
-        // No existing request - feedback should not create an intro request
-        // Instead, we could store feedback separately or just show a message
-        // For now, we'll just log it and show a message to the user
-        alert("Please request an intro first to provide feedback, or use the feedback to express interest in requesting an intro.");
-        // Alternative: We could create a separate feedback endpoint that doesn't create requests
-        // But for MVP, we'll keep it simple - feedback only works with existing requests
+        // No existing request - create one with the rating
+        // This allows users to express interest (thumbs up) or disinterest (thumbs down)
+        // via feedback buttons, which creates an intro request with the rating
+        const res = await fetch("/api/intro/request", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ targetId: targetUserId, rating }),
+        });
+        
+        if (res.ok) {
+          // Update status to pending since we created a request
+          setRequestStatuses((prev) => ({ ...prev, [targetUserId]: "pending" }));
+        } else {
+          const data = await res.json();
+          if (res.status === 409) {
+            // Request was created between check and create - update it instead
+            const patchRes = await fetch("/api/intro/request", {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ targetId: targetUserId, rating }),
+            });
+            if (patchRes.ok) {
+              setRequestStatuses((prev) => ({ ...prev, [targetUserId]: data.request?.status?.toLowerCase() || "pending" }));
+            } else {
+              alert("Failed to update feedback");
+            }
+          } else {
+            alert(data.error || "Failed to submit feedback");
+          }
+        }
       }
     } catch (error) {
       console.error("Error submitting feedback:", error);
@@ -404,6 +428,10 @@ export default function MatchesPage() {
                   ) : requestStatuses[match.userId] === "rejected" ? (
                     <div className="flex-1 rounded-lg bg-red-50 border border-red-200 px-4 py-2 text-sm font-medium text-red-800">
                       ❌ Intro request rejected
+                    </div>
+                  ) : requestStatuses[match.userId] === "completed" ? (
+                    <div className="flex-1 rounded-lg bg-blue-50 border border-blue-200 px-4 py-2 text-sm font-medium text-blue-800">
+                      ✅ Intro completed
                     </div>
                   ) : null}
                 </div>
