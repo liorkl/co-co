@@ -139,10 +139,9 @@ wait_for_agent_review() {
       local bug_count=$(./scripts/check-pr-bugs.sh "$pr_number" 2>/dev/null || echo "0")
       
       if [ "$bug_count" != "0" ]; then
-        if [ "$bug_count" != "$last_bug_count" ] || [ "$last_bug_count" = "0" ]; then
-          error "AGENT REVIEW found $bug_count bug(s)!"
-          return 1  # Bugs found
-        fi
+        # Report bugs whenever they exist, not just on first detection or count change
+        error "AGENT REVIEW found $bug_count bug(s)!"
+        return 1  # Bugs found
       fi
       
       last_bug_count="$bug_count"
@@ -154,7 +153,7 @@ wait_for_agent_review() {
         local repo_name=$(echo "$owner_repo" | jq -r '.name' 2>/dev/null || echo "")
         
         if [ -n "$owner" ] && [ -n "$repo_name" ]; then
-          local bug_count=$(gh api "repos/$owner/$repo_name/pulls/$pr_number/comments" --jq '[.[] | select(.user.login == "cursor[bot"]) | select(.body | contains("### Bug:"))] | length' 2>/dev/null || echo "0")
+          local bug_count=$(gh api "repos/$owner/$repo_name/pulls/$pr_number/comments" --jq '[.[] | select(.user.login == "cursor[bot]") | select(.body | contains("### Bug:"))] | length' 2>/dev/null || echo "0")
           
           if [ "$bug_count" != "0" ]; then
             error "AGENT REVIEW found $bug_count bug(s)!"
