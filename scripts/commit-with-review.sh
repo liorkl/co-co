@@ -51,7 +51,9 @@ run_pre_commit_checks() {
   
   # Integration tests (if available)
   # Check if the script exists in package.json without running it
-  if npm pkg get scripts.test:integration 2>/dev/null | grep -q "test:integration"; then
+  # npm pkg get returns the value (command) as a JSON string, or {} if not found
+  integration_script=$(npm pkg get scripts.test:integration 2>/dev/null || echo "{}")
+  if [ "$integration_script" != "{}" ] && [ "$integration_script" != "null" ] && [ -n "$integration_script" ]; then
     info "Running integration tests..."
     if ! npm run test:integration --silent >/dev/null 2>&1; then
       error "Integration tests failed"
@@ -96,13 +98,19 @@ commit_changes() {
     git add "${files[@]}"
   fi
   
-  info "Committing changes..."
-  if git commit -m "$commit_msg"; then
-    success "Changes committed successfully"
-    return 0
+  # Check if there are any staged changes to commit
+  if ! git diff --cached --quiet; then
+    info "Committing changes..."
+    if git commit -m "$commit_msg"; then
+      success "Changes committed successfully"
+      return 0
+    else
+      error "Commit failed"
+      return 1
+    fi
   else
-    error "Commit failed"
-    return 1
+    warning "No changes to commit. Files may not have been modified."
+    return 2  # Special return code for "no changes"
   fi
 }
 
@@ -136,7 +144,17 @@ wait_for_agent_review() {
     
     # Check for BugBot comments using our helper script
     if [ -f "./scripts/check-pr-bugs.sh" ]; then
-      local bug_count=$(./scripts/check-pr-bugs.sh "$pr_number" 2>/dev/null || echo "0")
+      local bug_count_output
+      bug_count_output=$(./scripts/check-pr-bugs.sh "$pr_number" 2>&1)
+      local bug_check_exit=$?
+      
+      if [ $bug_check_exit -ne 0 ]; then
+        error "Failed to check for bugs: $bug_count_output"
+        warning "Cannot verify bug status. Aborting to prevent pushing potentially broken code."
+        return 1  # Error checking bugs - fail safe
+      fi
+      
+      local bug_count="$bug_count_output"
       
       if [ "$bug_count" != "0" ]; then
         # Report bugs whenever they exist, not just on first detection or count change
@@ -169,8 +187,34 @@ wait_for_agent_review() {
     fi
   done
   
-  warning "AGENT REVIEW timeout reached. Assuming no bugs found."
-  return 0
+  # Timeout reached - check one more time to see if AGENT REVIEW completed
+  # If still no bugs after timeout, assume AGENT REVIEW completed with no bugs
+  if [ -f "./scripts/check-pr-bugs.sh" ]; then
+    local final_bug_count_output
+    final_bug_count_output=$(./scripts/check-pr-bugs.sh "$pr_number" 2>&1)
+    local final_bug_check_exit=$?
+    
+    if [ $final_bug_check_exit -ne 0 ]; then
+      error "Failed to check for bugs after timeout: $final_bug_count_output"
+      warning "Cannot verify bug status. Aborting to prevent pushing potentially broken code."
+      return 1  # Error checking bugs - fail safe
+    fi
+    
+    local final_bug_count="$final_bug_count_output"
+    if [ "$final_bug_count" != "0" ]; then
+      error "AGENT REVIEW found $final_bug_count bug(s) after timeout!"
+      return 1  # Bugs found
+    fi
+  else
+    warning "check-pr-bugs.sh not found. Cannot verify bug status after timeout."
+    return 1  # Fail safe
+  fi
+  
+  # No bugs found after waiting - AGENT REVIEW likely completed successfully
+  warning "AGENT REVIEW timeout reached after ${MAX_REVIEW_WAIT_TIME}s."
+  warning "No bugs detected. AGENT REVIEW may have completed, or may still be in progress."
+  warning "Proceeding assuming no bugs. Check PR manually if uncertain."
+  return 0  # No bugs found (or timeout, but no bugs detected)
 }
 
 # Step 4: Check for bugs in PR
@@ -185,7 +229,17 @@ check_for_bugs() {
   
   # Use our bug checker script
   if [ -f "./scripts/check-pr-bugs.sh" ]; then
-    local bug_count=$(./scripts/check-pr-bugs.sh "$pr_number" 2>/dev/null || echo "0")
+    local bug_count_output
+    bug_count_output=$(./scripts/check-pr-bugs.sh "$pr_number" 2>&1)
+    local bug_check_exit=$?
+    
+    if [ $bug_check_exit -ne 0 ]; then
+      error "Failed to check for bugs: $bug_count_output"
+      warning "Cannot verify bug status. Aborting to prevent pushing potentially broken code."
+      return 1  # Error checking bugs - fail safe
+    fi
+    
+    local bug_count="$bug_count_output"
     
     if [ "$bug_count" != "0" ]; then
       error "Found $bug_count bug(s) in PR review"
@@ -255,7 +309,14 @@ main() {
   echo ""
   
   # Step 2: Commit
-  if ! commit_changes "$commit_msg" "${files[@]}"; then
+  commit_changes "$commit_msg" "${files[@]}"
+  local commit_result=$?
+  
+  if [ $commit_result -eq 2 ]; then
+    # No changes to commit - this shouldn't happen on initial commit
+    error "No changes to commit. Please make changes before running this script."
+    exit 1
+  elif [ $commit_result -ne 0 ]; then
     error "Commit failed"
     exit 1
   fi
@@ -278,12 +339,14 @@ main() {
   # Check for bugs (with timeout)
   local bugs_found=0
   local iteration=0
+  local commit_iteration=0  # Track actual commits made (separate from loop iteration)
+  local has_uncommitted_fixes=0
   
   while [ $iteration -lt $MAX_BUG_FIX_ITERATIONS ]; do
     iteration=$((iteration + 1))
     
     if [ $iteration -gt 1 ]; then
-      info "Bug fix iteration #$iteration"
+      info "Bug fix attempt #$iteration (commit #$commit_iteration)"
       echo ""
       
       # Re-run pre-commit checks after fixes
@@ -293,31 +356,172 @@ main() {
       fi
       echo ""
       
-      # Commit fixes
-      if ! commit_changes "fix: address AGENT REVIEW feedback (iteration $iteration)"; then
+      # Commit fixes (use commit_iteration + 1 for the message since we'll increment after success)
+      commit_changes "fix: address AGENT REVIEW feedback (iteration $((commit_iteration + 1)))"
+      local commit_result=$?
+      
+      if [ $commit_result -eq 2 ]; then
+        # No changes to commit - user may have pressed Enter without making changes
+        warning "No changes detected. Did you fix the bugs?"
+        echo ""
+        warning "Options:"
+        info "  1. Press Enter to check for bugs again (without committing)"
+        info "  2. Type 'skip' to proceed with push anyway (not recommended)"
+        info "  3. Press Ctrl+C to exit"
+        echo ""
+        read -p "Your choice: " user_choice
+        if [ "$user_choice" = "skip" ]; then
+          warning "Skipping bug checks. Proceeding to push..."
+          bugs_found=0  # Clear flag to allow push
+          break
+        fi
+        echo ""
+        # No commit was made, so skip AGENT REVIEW wait and check for bugs directly
+        # If bugs still exist, inform the user and give them options
+        if [ -n "$pr_number" ] && [ "$pr_number" != "null" ]; then
+          if ! check_for_bugs "$pr_number"; then
+            warning "Bugs still present in PR. No changes were made to fix them."
+            echo ""
+            info "Options:"
+            info "  1. Fix bugs and run the script again"
+            info "  2. Type 'skip' to proceed with push anyway (not recommended)"
+            info "  3. Press Enter to exit"
+            echo ""
+            read -p "Your choice: " user_choice2
+            if [ "$user_choice2" = "skip" ]; then
+              warning "Skipping bug checks. Proceeding to push..."
+              bugs_found=0  # Clear flag to allow push
+              break
+            else
+              error "Exiting. Please fix bugs before continuing."
+              exit 1
+            fi
+          else
+            # No bugs found - user may have fixed them manually or bugs were resolved
+            success "No bugs found in PR review"
+            bugs_found=0
+            break
+          fi
+        else
+          # No PR - can't check for bugs, so exit
+          warning "No PR found. Cannot verify bug status."
+          error "Exiting. Please fix bugs and commit changes before continuing."
+          exit 1
+        fi
+        # Note: All code paths above either break, exit, or continue to wait_for_agent_review
+      elif [ $commit_result -ne 0 ]; then
         error "Failed to commit bug fixes"
         exit 1
+      else
+        # Successful commit - increment commit counter
+        commit_iteration=$((commit_iteration + 1))
+        echo ""
+        has_uncommitted_fixes=0
       fi
-      echo ""
     fi
     
     # Wait for AGENT REVIEW
     if wait_for_agent_review "$pr_number"; then
-      # No bugs found or timeout
+      # No bugs found - AGENT REVIEW completed successfully
       bugs_found=0
       break
     else
-      # Bugs found
+      # Bugs found - AGENT REVIEW detected issues
       bugs_found=1
-      warning "Bugs detected by AGENT REVIEW"
+      warning "Bugs detected by AGENT REVIEW (attempt $iteration/$MAX_BUG_FIX_ITERATIONS)"
       echo ""
       info "Please review the bugs and fix them."
       info "The script will wait for you to make fixes, then run again automatically."
       echo ""
-      read -p "Press Enter after you've fixed the bugs (or Ctrl+C to exit): "
+      if [ $iteration -ge $MAX_BUG_FIX_ITERATIONS ]; then
+        warning "Maximum iterations reached. You can:"
+        info "  1. Fix bugs manually and push later"
+        info "  2. Type 'skip' to proceed with push anyway (not recommended)"
+        info "  3. Press Ctrl+C to exit"
+        echo ""
+        read -p "Your choice (Enter to exit, 'skip' to push anyway): " user_choice
+        if [ "$user_choice" = "skip" ]; then
+          warning "Skipping bug checks. Proceeding to push..."
+          bugs_found=0  # Clear flag to allow push
+          break
+        else
+          error "Exiting. Fix bugs manually and push when ready."
+          exit 1
+        fi
+      else
+        read -p "Press Enter after you've fixed the bugs, 'skip' to proceed anyway, or Ctrl+C to exit: " user_choice
+        if [ "$user_choice" = "skip" ]; then
+          warning "Skipping remaining bug checks. Proceeding to push..."
+          bugs_found=0  # Clear flag to allow push
+          break
+        fi
+      fi
       echo ""
+      # Always set has_uncommitted_fixes when bugs are detected
+      # The user will need to fix bugs, and those fixes need to be committed
+      # The flag will be cleared when a commit is successfully made (line 388)
+      has_uncommitted_fixes=1
     fi
   done
+  
+  # If we exited the loop with uncommitted fixes (e.g., on max iteration), commit them now
+  # Only commit if there are actually uncommitted changes
+  if [ $has_uncommitted_fixes -eq 1 ]; then
+    # Check if there are any uncommitted changes before attempting to commit
+    if ! git diff --quiet || ! git diff --cached --quiet; then
+      info "Committing fixes from final iteration..."
+      echo ""
+      
+      # Re-run pre-commit checks after fixes
+      if ! run_pre_commit_checks; then
+        error "Pre-commit checks failed after bug fixes"
+        exit 1
+      fi
+      echo ""
+      
+      # Commit fixes (use commit_iteration + 1 for the message since we'll increment after success)
+      commit_changes "fix: address AGENT REVIEW feedback (iteration $((commit_iteration + 1)))"
+      local commit_result=$?
+      
+      if [ $commit_result -eq 2 ]; then
+        # No changes to commit - user may have pressed Enter without making changes
+        warning "No changes detected. Did you fix the bugs?"
+        warning "Skipping commit. Will check for bugs in existing code."
+        echo ""
+        # Don't wait for AGENT REVIEW since there's no new commit
+        # Just proceed to final bug check
+      elif [ $commit_result -ne 0 ]; then
+        error "Failed to commit bug fixes"
+        exit 1
+      else
+        # Successful commit - increment commit counter
+        commit_iteration=$((commit_iteration + 1))
+        echo ""
+        
+        # Wait for AGENT REVIEW to run on the newly committed fixes
+        info "Waiting for AGENT REVIEW on final fix commit..."
+        info "Note: AGENT REVIEW runs automatically after commit in Cursor IDE"
+        echo ""
+        
+        # Wait a bit for AGENT REVIEW to start
+        sleep 5
+        
+        # Wait for AGENT REVIEW to complete on the new commit
+        if ! wait_for_agent_review "$pr_number"; then
+          error "AGENT REVIEW found bugs in final fix commit. Please fix them manually."
+          exit 1
+        else
+          # Successfully fixed bugs in final iteration - clear bugs_found flag
+          bugs_found=0
+        fi
+      fi
+    else
+      # has_uncommitted_fixes is 1 but no actual changes exist
+      # This happens when fixes were already committed but bugs were found again
+      warning "No uncommitted changes found. Fixes may have already been committed."
+      echo ""
+    fi
+  fi
   
   if [ $bugs_found -eq 1 ] && [ $iteration -ge $MAX_BUG_FIX_ITERATIONS ]; then
     error "Maximum bug fix iterations reached. Please fix bugs manually."
@@ -327,9 +531,22 @@ main() {
   # Final check for bugs
   if [ -n "$pr_number" ] && [ "$pr_number" != "null" ]; then
     if ! check_for_bugs "$pr_number"; then
-      warning "Bugs still present in PR. Review manually before pushing."
-      info "To push anyway, run: git push"
-      exit 1
+      warning "Bugs still present in PR."
+      echo ""
+      info "Options:"
+      info "  1. Fix bugs manually and push later"
+      info "  2. Type 'force' to push anyway (not recommended)"
+      info "  3. Press Enter to exit"
+      echo ""
+      read -p "Your choice: " user_choice
+      if [ "$user_choice" != "force" ]; then
+        warning "Exiting. Fix bugs manually and push when ready."
+        info "To push anyway, run: git push"
+        exit 1
+      else
+        warning "Force pushing despite bugs. This is not recommended."
+        echo ""
+      fi
     fi
   fi
   
