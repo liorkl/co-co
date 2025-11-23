@@ -50,7 +50,8 @@ run_pre_commit_checks() {
   success "Unit tests passed"
   
   # Integration tests (if available)
-  if npm run test:integration --silent >/dev/null 2>&1; then
+  # Check if the script exists in package.json without running it
+  if npm pkg get scripts.test:integration 2>/dev/null | grep -q "test:integration" || npm run test:integration --dry-run >/dev/null 2>&1; then
     info "Running integration tests..."
     if ! npm run test:integration --silent >/dev/null 2>&1; then
       error "Integration tests failed"
