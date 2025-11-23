@@ -34,6 +34,7 @@ export default function MultiStepForm({
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
   const [isPreview, setIsPreview] = useState(false);
+  const [hasLoadedFromStorage, setHasLoadedFromStorage] = useState(false);
 
   // Update internal state when controlled formData changes
   useEffect(() => {
@@ -59,13 +60,18 @@ export default function MultiStepForm({
           console.error("Failed to load saved data", e);
         }
       }
+      // Mark as loaded even if no saved data exists, to prevent autosave from overwriting
+      setHasLoadedFromStorage(true);
+    } else {
+      // If no storageKey, mark as loaded immediately
+      setHasLoadedFromStorage(true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [storageKey]); // Only run on mount
 
-  // Autosave to localStorage
+  // Autosave to localStorage (only after initial load completes)
   useEffect(() => {
-    if (storageKey && typeof window !== "undefined") {
+    if (storageKey && typeof window !== "undefined" && hasLoadedFromStorage) {
       try {
         localStorage.setItem(storageKey, JSON.stringify(formData));
       } catch (e) {
@@ -73,7 +79,7 @@ export default function MultiStepForm({
         console.warn("Failed to save to localStorage", e);
       }
     }
-  }, [formData, storageKey]);
+  }, [formData, storageKey, hasLoadedFromStorage]);
 
   const validateCurrentStep = (): boolean => {
     if (steps.length === 0 || currentStep >= steps.length) {
@@ -226,7 +232,7 @@ export default function MultiStepForm({
             onClick={handleNext}
             className="rounded bg-black px-6 py-2 text-white"
           >
-            {currentStep === steps.length - 1 ? "Review" : "Next →"}
+            {currentStep === steps.length - 2 ? "Review" : "Next →"}
           </button>
         )}
       </div>

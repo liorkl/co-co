@@ -45,7 +45,6 @@ export default function CTOOnboarding() {
   };
 
   const handleComplete = async (data: CTOFormData) => {
-    track({ type: "onboarding_step", step: "cto_complete" });
     try {
       const response = await fetch("/api/interview/submit", {
         method: "POST",
@@ -56,6 +55,8 @@ export default function CTOOnboarding() {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.error || `Failed to submit onboarding: ${response.statusText}`);
       }
+      // Track completion only after successful submission
+      track({ type: "onboarding_step", step: "cto_complete" });
       router.push("/matches");
     } catch (error) {
       // Re-throw to let MultiStepForm handle error display

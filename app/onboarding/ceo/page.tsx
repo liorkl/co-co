@@ -47,7 +47,6 @@ export default function CEOOnboarding() {
   };
 
   const handleComplete = async (data: CEOFormData) => {
-    track({ type: "onboarding_step", step: "ceo_complete" });
     try {
       const response = await fetch("/api/interview/submit", {
         method: "POST",
@@ -58,6 +57,8 @@ export default function CEOOnboarding() {
         const errorData = await response.json().catch(() => ({}));
         throw new Error(errorData.error || `Failed to submit onboarding: ${response.statusText}`);
       }
+      // Track completion only after successful submission
+      track({ type: "onboarding_step", step: "ceo_complete" });
       router.push("/matches");
     } catch (error) {
       // Re-throw to let MultiStepForm handle error display
