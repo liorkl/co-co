@@ -148,19 +148,38 @@ test.describe("Onboarding journeys", () => {
     await page.getByRole("button", { name: "I am a CEO" }).click();
     await page.waitForURL(/\/onboarding\/ceo$/, { timeout: 10_000 });
 
-    // Fill onboarding form
-    const ceoInputs = page.locator("form input");
-    await ceoInputs.nth(0).fill("Alice CEO");
-    await ceoInputs.nth(1).fill("New York");
-    await ceoInputs.nth(2).fill("Seed");
-    await ceoInputs.nth(3).fill("AI");
-    await ceoInputs.nth(4).fill("5%");
-    await ceoInputs.nth(5).fill("$80k");
-    await page
-      .locator("form textarea")
-      .fill("Looking for a partner to lead AI product development.");
+    // Fill multi-step onboarding form
+    // Step 1: Basic info
+    await expect(page.getByRole("heading", { name: "Tell us about yourself" })).toBeVisible();
+    await page.getByLabel(/Your name/i).fill("Alice CEO");
+    await page.getByLabel(/Location/i).fill("New York");
+    await page.getByRole("button", { name: /Next/i }).click();
 
-    await page.getByRole("button", { name: "Save and see matches" }).click();
+    // Step 2: Startup info
+    await expect(page.getByRole("heading", { name: "About your startup" })).toBeVisible();
+    await page.getByLabel(/Startup stage/i).selectOption("idea");
+    await page.getByLabel(/Domain\/Industry/i).fill("AI");
+    await page.getByRole("button", { name: /Next/i }).click();
+
+    // Step 3: Description
+    await expect(page.getByRole("heading", { name: "Describe your startup" })).toBeVisible();
+    await page.getByLabel(/Startup description/i).fill("Building an AI-powered platform for startups.");
+    await page.getByRole("button", { name: /Next/i }).click();
+
+    // Step 4: Offer
+    await expect(page.getByRole("heading", { name: "What you're offering" })).toBeVisible();
+    await page.getByLabel(/Equity offer/i).fill("5%");
+    await page.getByLabel(/Salary offer/i).fill("$80k");
+    await page.getByRole("button", { name: /Next/i }).click();
+
+    // Step 5: Needs
+    await expect(page.getByRole("heading", { name: "What you need from a CTO" })).toBeVisible();
+    await page.getByLabel(/What are you looking for in a CTO/i).fill("Looking for a partner to lead AI product development.");
+    await page.getByRole("button", { name: /Review/i }).click();
+
+    // Step 6: Preview
+    await expect(page.getByRole("heading", { name: "Review your information" })).toBeVisible();
+    await page.getByRole("button", { name: /Complete Onboarding/i }).click();
 
     // Verify redirect to matches page with seeded CTO profiles
     await page.waitForURL(/\/matches$/, { timeout: 15_000 });
@@ -301,19 +320,33 @@ test.describe("Onboarding journeys", () => {
     await page.getByRole("button", { name: "I am a CTO" }).click();
     await page.waitForURL(/\/onboarding\/cto$/, { timeout: 10_000 });
 
-    // Fill CTO onboarding form
-    const ctoInputs = page.locator("form input");
-    await ctoInputs.nth(0).fill("Bob CTO");
-    await ctoInputs.nth(1).fill("San Francisco");
-    await ctoInputs.nth(2).fill("TypeScript");
-    await ctoInputs.nth(3).fill("6");
-    await ctoInputs.nth(4).fill("FinTech");
-    await ctoInputs.nth(5).fill("Built scalable payment systems.");
-    await page
-      .locator("form textarea")
-      .fill("Seeking a visionary CEO with strong go-to-market experience.");
+    // Fill multi-step CTO onboarding form
+    // Step 1: Basic info
+    await expect(page.getByRole("heading", { name: "Tell us about yourself" })).toBeVisible();
+    await page.getByLabel(/Your name/i).fill("Bob CTO");
+    await page.getByLabel(/Location/i).fill("San Francisco");
+    await page.getByRole("button", { name: /Next/i }).click();
 
-    await page.getByRole("button", { name: "Save and see matches" }).click();
+    // Step 2: Technical background
+    await expect(page.getByRole("heading", { name: "Your technical background" })).toBeVisible();
+    await page.getByLabel(/Primary tech stack/i).fill("TypeScript, React, Node.js");
+    await page.getByLabel(/Years of experience/i).selectOption("6-10");
+    await page.getByRole("button", { name: /Next/i }).click();
+
+    // Step 3: Experience
+    await expect(page.getByRole("heading", { name: "Your experience and interests" })).toBeVisible();
+    await page.getByLabel(/Track record highlights/i).fill("Built scalable payment systems.");
+    await page.getByLabel(/Domains of interest/i).fill("FinTech");
+    await page.getByRole("button", { name: /Next/i }).click();
+
+    // Step 4: Preferences
+    await expect(page.getByRole("heading", { name: "What you're looking for" })).toBeVisible();
+    await page.getByLabel(/What are you looking for in a CEO/i).fill("Seeking a visionary CEO with strong go-to-market experience.");
+    await page.getByRole("button", { name: /Review/i }).click();
+
+    // Step 5: Preview
+    await expect(page.getByRole("heading", { name: "Review your information" })).toBeVisible();
+    await page.getByRole("button", { name: /Complete Onboarding/i }).click();
 
     // Verify redirect to matches page with seeded CEO profiles
     await page.waitForURL(/\/matches$/, { timeout: 15_000 });
