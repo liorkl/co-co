@@ -51,7 +51,7 @@ run_pre_commit_checks() {
   
   # Integration tests (if available)
   # Check if the script exists in package.json without running it
-  if npm pkg get scripts.test:integration 2>/dev/null | grep -q "test:integration" || npm run test:integration --dry-run >/dev/null 2>&1; then
+  if npm pkg get scripts.test:integration 2>/dev/null | grep -q "test:integration"; then
     info "Running integration tests..."
     if ! npm run test:integration --silent >/dev/null 2>&1; then
       error "Integration tests failed"
