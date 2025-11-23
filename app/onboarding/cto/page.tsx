@@ -37,7 +37,7 @@ export default function CTOOnboarding() {
   };
 
   const validateStep2 = (): boolean => {
-    return !!(formData.primary_stack && formData.years_experience);
+    return !!(formData.primary_stack.trim() && formData.years_experience);
   };
 
   const validateStep3 = (): boolean => {
@@ -166,7 +166,7 @@ export default function CTOOnboarding() {
     },
     {
       id: "preferences",
-      title: "What you&apos;re looking for",
+      title: "What you're looking for",
       description: "Help us match you with the right CEO and startup.",
       component: (
         <div className="space-y-6">

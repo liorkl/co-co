@@ -39,7 +39,7 @@ export default function CEOOnboarding() {
   };
 
   const validateStep2 = (): boolean => {
-    return !!(formData.stage && formData.domain);
+    return !!(formData.stage && formData.domain.trim());
   };
 
   const validateStep3 = (): boolean => {
@@ -159,7 +159,7 @@ export default function CEOOnboarding() {
     },
     {
       id: "offer",
-      title: "What you&apos;re offering",
+      title: "What you're offering",
       description: "Help potential cofounders understand the opportunity.",
       component: (
         <div className="space-y-6">
