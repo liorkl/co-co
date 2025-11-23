@@ -138,6 +138,10 @@ export default function MultiStepForm({
 
     if (isPreview) {
       setIsPreview(false);
+      // Go back to the previous step when exiting preview mode
+      if (currentStep > 0) {
+        setCurrentStep(currentStep - 1);
+      }
     } else if (currentStep > 0) {
       setCurrentStep(currentStep - 1);
     }
