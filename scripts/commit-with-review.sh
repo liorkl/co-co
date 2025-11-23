@@ -198,7 +198,7 @@ check_for_bugs() {
         local repo_name=$(echo "$owner_repo" | jq -r '.name' 2>/dev/null || echo "")
         
         if [ -n "$owner" ] && [ -n "$repo_name" ]; then
-          gh api "repos/$owner/$repo_name/pulls/$pr_number/comments" --jq '.[] | select(.user.login == "cursor[bot"]) | select(.body | contains("### Bug:")) | "  - \(.body | split("\n")[0] | sub("### Bug: "; ""))"' 2>/dev/null | head -10 || true
+          gh api "repos/$owner/$repo_name/pulls/$pr_number/comments" --jq '.[] | select(.user.login == "cursor[bot]") | select(.body | contains("### Bug:")) | "  - \(.body | split("\n")[0] | sub("### Bug: "; ""))"' 2>/dev/null | head -10 || true
         fi
       fi
       
