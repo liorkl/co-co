@@ -244,9 +244,17 @@ wait_for_agent_review() {
       # Fallback: check for any PR comments from cursor[bot]
       if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
         if [ -z "$owner" ] || [ -z "$repo_name" ]; then
-          local owner_repo=$(gh repo view --json owner,name --jq '{owner: .owner.login, name: .name}' 2>/dev/null || echo '{"owner":"","name":""}')
-          owner=$(echo "$owner_repo" | jq -r '.owner' 2>/dev/null || echo "")
-          repo_name=$(echo "$owner_repo" | jq -r '.name' 2>/dev/null || echo "")
+          if command -v jq >/dev/null 2>&1; then
+            local owner_repo=$(gh repo view --json owner,name --jq '{owner: .owner.login, name: .name}' 2>/dev/null || echo '{"owner":"","name":""}')
+            owner=$(echo "$owner_repo" | jq -r '.owner' 2>/dev/null || echo "")
+            repo_name=$(echo "$owner_repo" | jq -r '.name' 2>/dev/null || echo "")
+          else
+            local remote_url=$(git remote get-url origin 2>/dev/null || echo "")
+            if [[ "$remote_url" =~ github.com[:/]([^/]+)/([^/]+) ]]; then
+              owner="${BASH_REMATCH[1]}"
+              repo_name="${BASH_REMATCH[2]%.git}"
+            fi
+          fi
         fi
         
         if [ -n "$owner" ] && [ -n "$repo_name" ]; then
@@ -269,6 +277,10 @@ wait_for_agent_review() {
             error "AGENT REVIEW found $new_bugs new bug(s) (total: $bug_count, existing: $initial_bug_count)!"
             return 1  # New bugs found
           fi
+          
+          # Update last counts for progress reporting
+          last_bug_count="$bug_count"
+          last_comment_count="$current_comment_count"
         fi
       fi
     fi
