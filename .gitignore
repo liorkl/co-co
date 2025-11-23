@@ -37,6 +37,9 @@ tsconfig.tsbuildinfo
 # generated files
 PR_DESCRIPTION.md
 
+# test output
+/tmp/
+
 # prisma
 # Note: Migration SQL files are typically committed, but exclude if they contain sensitive data
 # /prisma/migrations/*.sql

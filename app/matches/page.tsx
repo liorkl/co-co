@@ -27,7 +27,7 @@ type Match = {
   } | null;
 };
 
-type IntroRequestStatus = "none" | "pending" | "approved" | "rejected" | "loading";
+type IntroRequestStatus = "none" | "pending" | "approved" | "rejected" | "completed" | "loading";
 
 function getMatchQuality(score: number): { label: string; color: string; bgColor: string } {
   if (score >= 0.8) {
@@ -72,7 +72,7 @@ export default function MatchesPage() {
           // This ensures targetId matches the match.userId we're displaying
           if (req.requesterId === currentUserId && req.targetId) {
             const status = req.status?.toLowerCase() as IntroRequestStatus;
-            if (status === "pending" || status === "approved" || status === "rejected") {
+            if (status === "pending" || status === "approved" || status === "rejected" || status === "completed") {
               statusMap[req.targetId] = status;
             }
           }
@@ -136,22 +136,17 @@ export default function MatchesPage() {
         if (!res.ok) {
           const data = await res.json();
           alert(data.error || "Failed to update feedback");
+        } else {
+          // Show success feedback (optional - could be a toast notification)
+          console.log("Feedback updated successfully");
         }
       } else {
-        // No existing request - create one with feedback
-        const res = await fetch("/api/intro/request", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ targetId: targetUserId, rating }),
-        });
-        
-        if (res.ok) {
-          // Update status to pending since we created a request
-          setRequestStatuses((prev) => ({ ...prev, [targetUserId]: "pending" }));
-        } else {
-          const data = await res.json();
-          alert(data.error || "Failed to submit feedback");
-        }
+        // No existing request - feedback should not create an intro request
+        // Instead, we could store feedback separately or just show a message
+        // For now, we'll just log it and show a message to the user
+        alert("Please request an intro first to provide feedback, or use the feedback to express interest in requesting an intro.");
+        // Alternative: We could create a separate feedback endpoint that doesn't create requests
+        // But for MVP, we'll keep it simple - feedback only works with existing requests
       }
     } catch (error) {
       console.error("Error submitting feedback:", error);
