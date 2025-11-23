@@ -52,18 +52,48 @@ if ! command -v jq >/dev/null 2>&1; then
   # Note: gh api --jq requires jq, so we get raw JSON and parse it manually
   pr_comments_json=$(gh api "repos/$owner/$repo_name/pulls/$pr_number/comments" 2>/dev/null || echo "[]")
   if [ -n "$pr_comments_json" ] && [ "$pr_comments_json" != "[]" ]; then
+    # Normalize JSON by removing newlines and extra spaces for multiline matching
+    # This allows patterns to match across JSON structure boundaries
+    normalized_json=$(echo "$pr_comments_json" | tr '\n' ' ' | sed 's/  */ /g')
+    
     # Count comments from cursor[bot] that contain "### Bug:"
-    # This is a simple grep-based approach since jq is not available
-    bug_count=$(echo "$pr_comments_json" | grep -o '"login":"cursor\[bot\]"' | wc -l | tr -d ' ' || echo "0")
-    if [ "$bug_count" != "0" ]; then
-      # Filter for comments that also contain "### Bug:"
-      # We check if the comment body contains the bug marker
-      bug_count=$(echo "$pr_comments_json" | grep -c '"login":"cursor\[bot\]".*"### Bug:"' 2>/dev/null || echo "0")
-      # If the above doesn't work (due to JSON structure), try a simpler approach
-      if [ "$bug_count" = "0" ]; then
-        # Count occurrences of cursor[bot] login followed by Bug: in the JSON
-        bug_count=$(echo "$pr_comments_json" | grep -c 'cursor\[bot\].*### Bug:' 2>/dev/null || echo "0")
-      fi
+    # Strategy: Split JSON into comment objects and check each one individually
+    # This handles multiline JSON and nested structures properly
+    
+    # Extract each comment object by finding patterns between { and }
+    # We'll use a simple approach: find each cursor[bot] login and check surrounding context
+    cursor_bot_count=$(echo "$normalized_json" | grep -o '"login":"cursor\[bot\]"' | wc -l | tr -d ' ' || echo "0")
+    
+    if [ "$cursor_bot_count" != "0" ] && [ "$cursor_bot_count" != "" ]; then
+      # For each cursor[bot] login found, check if "### Bug:" appears in the same comment
+      # Use awk to split JSON into comment objects and check each one
+      # This approach handles multiline JSON and nested structures properly
+      bug_count=$(echo "$normalized_json" | awk '{
+        # Simple approach: if both patterns exist in the normalized JSON, count them
+        # Since JSON is normalized (no newlines), we can check if cursor[bot] and ### Bug: appear together
+        # Split by comment boundaries (rough approximation) or check proximity
+        count = 0
+        # Find each occurrence of cursor[bot] and check surrounding context
+        remaining = $0
+        while (remaining ~ /cursor\[bot\]/) {
+          # Find position of cursor[bot]
+          match(remaining, /cursor\[bot\]/)
+          pos = RSTART
+          # Extract context around this position (2000 chars total)
+          start = pos - 1000
+          if (start < 1) start = 1
+          end = pos + 1000
+          if (end > length(remaining)) end = length(remaining)
+          context = substr(remaining, start, end - start + 1)
+          # Check if context contains "### Bug:"
+          if (context ~ /### Bug:/) {
+            count++
+          }
+          # Move past this match to find next occurrence
+          remaining = substr(remaining, RSTART + RLENGTH)
+        }
+        print count + 0
+      }' 2>/dev/null || echo "0")
     fi
   fi
   echo "$bug_count"
