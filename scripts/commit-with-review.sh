@@ -195,6 +195,8 @@ wait_for_agent_review() {
   local last_bug_count="$initial_bug_count"
   local last_comment_count="$initial_comment_count"
   local review_started=0  # Track if AGENT REVIEW has started (any cursor[bot] comments exist)
+  local last_comment_increase_time=-1  # Time (in seconds) when cursor[bot] last posted a comment
+  local completion_grace_seconds=${REVIEW_COMPLETION_GRACE:-30}  # Wait window after latest comment before assuming completion
   
   while [ $elapsed -lt $MAX_REVIEW_WAIT_TIME ]; do
     sleep $REVIEW_CHECK_INTERVAL
@@ -219,15 +221,13 @@ wait_for_agent_review() {
       if [ -n "$owner" ] && [ -n "$repo_name" ]; then
         current_comment_count=$(count_cursor_bot_comments "$pr_number" "$owner" "$repo_name")
       fi
-      
-      # If new comments appeared, AGENT REVIEW has started
+      if [ "$current_comment_count" -gt "$last_comment_count" ]; then
+        last_comment_increase_time=$elapsed
+      fi
+
+      # If new comments appeared at any point, AGENT REVIEW has started
       if [ "$current_comment_count" -gt "$initial_comment_count" ]; then
         review_started=1
-        # If comment count increased but no new bugs, AGENT REVIEW completed successfully
-        if [ "$bug_count" -le "$initial_bug_count" ]; then
-          success "AGENT REVIEW completed - no new bugs found (total comments: $current_comment_count, bugs: $bug_count)"
-          return 0  # AGENT REVIEW completed with no new bugs
-        fi
       fi
       
       # Only report bugs if the count INCREASED (new bugs from current commit)
@@ -240,8 +240,14 @@ wait_for_agent_review() {
       
       last_bug_count="$bug_count"
       last_comment_count="$current_comment_count"
+
+      # If AGENT REVIEW has started and no new bugs appeared for the grace window after the last comment, assume completion
+      if [ "$review_started" -eq 1 ] && [ "$bug_count" -le "$initial_bug_count" ] && [ "$last_comment_increase_time" -ge 0 ] && [ $((elapsed - last_comment_increase_time)) -ge $completion_grace_seconds ]; then
+        success "AGENT REVIEW completed - no new bugs found (total comments: $current_comment_count, bugs: $bug_count)"
+        return 0
+      fi
     else
-      # Fallback: check for any PR comments from cursor[bot]
+          # Fallback: check for any PR comments from cursor[bot]
       if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
         if [ -z "$owner" ] || [ -z "$repo_name" ]; then
           if command -v jq >/dev/null 2>&1; then
@@ -260,15 +266,13 @@ wait_for_agent_review() {
         if [ -n "$owner" ] && [ -n "$repo_name" ]; then
           local bug_count=$(gh api "repos/$owner/$repo_name/pulls/$pr_number/comments" --jq '[.[] | select(.user.login == "cursor[bot]") | select(.body | contains("### Bug:"))] | length' 2>/dev/null || echo "0")
           local current_comment_count=$(count_cursor_bot_comments "$pr_number" "$owner" "$repo_name")
-          
+          if [ "$current_comment_count" -gt "$last_comment_count" ]; then
+            last_comment_increase_time=$elapsed
+          fi
+
           # If new comments appeared, AGENT REVIEW has started
           if [ "$current_comment_count" -gt "$initial_comment_count" ]; then
             review_started=1
-            # If comment count increased but no new bugs, AGENT REVIEW completed successfully
-            if [ "$bug_count" -le "$initial_bug_count" ]; then
-              success "AGENT REVIEW completed - no new bugs found (total comments: $current_comment_count, bugs: $bug_count)"
-              return 0  # AGENT REVIEW completed with no new bugs
-            fi
           fi
           
           # Only report bugs if the count INCREASED (new bugs from current commit)
@@ -281,6 +285,12 @@ wait_for_agent_review() {
           # Update last counts for progress reporting
           last_bug_count="$bug_count"
           last_comment_count="$current_comment_count"
+
+          # If AGENT REVIEW has started and no new bugs appeared for the grace window after the last comment, assume completion
+          if [ "$review_started" -eq 1 ] && [ "$bug_count" -le "$initial_bug_count" ] && [ "$last_comment_increase_time" -ge 0 ] && [ $((elapsed - last_comment_increase_time)) -ge $completion_grace_seconds ]; then
+            success "AGENT REVIEW completed - no new bugs found (total comments: $current_comment_count, bugs: $bug_count)"
+            return 0
+          fi
         fi
       fi
     fi
