@@ -114,6 +114,28 @@ commit_changes() {
   fi
 }
 
+# Helper function to count all cursor[bot] comments (not just bugs)
+count_cursor_bot_comments() {
+  local pr_number="$1"
+  local owner="$2"
+  local repo_name="$3"
+  
+  if [ -z "$owner" ] || [ -z "$repo_name" ]; then
+    echo "0"
+    return 0
+  fi
+  
+  if command -v jq >/dev/null 2>&1; then
+    local comment_count=$(gh api "repos/$owner/$repo_name/pulls/$pr_number/comments" --jq '[.[] | select(.user.login == "cursor[bot]")] | length' 2>/dev/null || echo "0")
+    echo "$comment_count"
+  else
+    # Fallback: use grep to count cursor[bot] comments
+    local comments_json=$(gh api "repos/$owner/$repo_name/pulls/$pr_number/comments" 2>/dev/null || echo "[]")
+    local comment_count=$(echo "$comments_json" | grep -o '"login":"cursor\[bot\]"' | wc -l | tr -d ' ')
+    echo "${comment_count:-0}"
+  fi
+}
+
 # Step 3: Wait for AGENT REVIEW and check for bugs
 wait_for_agent_review() {
   local pr_number="$1"
@@ -135,8 +157,26 @@ wait_for_agent_review() {
   info "Waiting for AGENT REVIEW on PR #$pr_number..."
   info "Checking for BugBot comments every ${REVIEW_CHECK_INTERVAL}s (max ${MAX_REVIEW_WAIT_TIME}s)..."
   
-  # Get initial bug count to distinguish old bugs from new ones
+  # Get repository info for comment checking
+  local owner=""
+  local repo_name=""
+  if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
+    if command -v jq >/dev/null 2>&1; then
+      local owner_repo=$(gh repo view --json owner,name --jq '{owner: .owner.login, name: .name}' 2>/dev/null || echo '{"owner":"","name":""}')
+      owner=$(echo "$owner_repo" | jq -r '.owner' 2>/dev/null || echo "")
+      repo_name=$(echo "$owner_repo" | jq -r '.name' 2>/dev/null || echo "")
+    else
+      local remote_url=$(git remote get-url origin 2>/dev/null || echo "")
+      if [[ "$remote_url" =~ github.com[:/]([^/]+)/([^/]+) ]]; then
+        owner="${BASH_REMATCH[1]}"
+        repo_name="${BASH_REMATCH[2]%.git}"
+      fi
+    fi
+  fi
+  
+  # Get initial bug count and comment count to distinguish old from new
   local initial_bug_count=0
+  local initial_comment_count=0
   if [ -f "./scripts/check-pr-bugs.sh" ]; then
     local initial_bug_count_output
     initial_bug_count_output=$(./scripts/check-pr-bugs.sh "$pr_number" 2>&1)
@@ -147,8 +187,16 @@ wait_for_agent_review() {
     fi
   fi
   
+  if [ -n "$owner" ] && [ -n "$repo_name" ]; then
+    initial_comment_count=$(count_cursor_bot_comments "$pr_number" "$owner" "$repo_name")
+  fi
+  
   local elapsed=0
   local last_bug_count="$initial_bug_count"
+  local last_comment_count="$initial_comment_count"
+  local review_started=0  # Track if AGENT REVIEW has started (any cursor[bot] comments exist)
+  local last_comment_increase_time=-1  # Time (in seconds) when cursor[bot] last posted a comment
+  local completion_grace_seconds=${REVIEW_COMPLETION_GRACE:-30}  # Wait window after latest comment before assuming completion
   
   while [ $elapsed -lt $MAX_REVIEW_WAIT_TIME ]; do
     sleep $REVIEW_CHECK_INTERVAL
@@ -168,6 +216,20 @@ wait_for_agent_review() {
       
       local bug_count="$bug_count_output"
       
+      # Check for any cursor[bot] comments to detect if AGENT REVIEW has started/completed
+      local current_comment_count=0
+      if [ -n "$owner" ] && [ -n "$repo_name" ]; then
+        current_comment_count=$(count_cursor_bot_comments "$pr_number" "$owner" "$repo_name")
+      fi
+      if [ "$current_comment_count" -gt "$last_comment_count" ]; then
+        last_comment_increase_time=$elapsed
+      fi
+
+      # If new comments appeared at any point, AGENT REVIEW has started
+      if [ "$current_comment_count" -gt "$initial_comment_count" ]; then
+        review_started=1
+      fi
+      
       # Only report bugs if the count INCREASED (new bugs from current commit)
       # If bugs exist but count hasn't increased, those are old bugs - continue waiting
       if [ "$bug_count" -gt "$initial_bug_count" ]; then
@@ -177,15 +239,41 @@ wait_for_agent_review() {
       fi
       
       last_bug_count="$bug_count"
+      last_comment_count="$current_comment_count"
+
+      # If AGENT REVIEW has started and no new bugs appeared for the grace window after the last comment, assume completion
+      if [ "$review_started" -eq 1 ] && [ "$bug_count" -le "$initial_bug_count" ] && [ "$last_comment_increase_time" -ge 0 ] && [ $((elapsed - last_comment_increase_time)) -ge $completion_grace_seconds ]; then
+        success "AGENT REVIEW completed - no new bugs found (total comments: $current_comment_count, bugs: $bug_count)"
+        return 0
+      fi
     else
-      # Fallback: check for any PR comments from cursor[bot]
+          # Fallback: check for any PR comments from cursor[bot]
       if command -v gh >/dev/null 2>&1 && gh auth status >/dev/null 2>&1; then
-        local owner_repo=$(gh repo view --json owner,name --jq '{owner: .owner.login, name: .name}' 2>/dev/null || echo '{"owner":"","name":""}')
-        local owner=$(echo "$owner_repo" | jq -r '.owner' 2>/dev/null || echo "")
-        local repo_name=$(echo "$owner_repo" | jq -r '.name' 2>/dev/null || echo "")
+        if [ -z "$owner" ] || [ -z "$repo_name" ]; then
+          if command -v jq >/dev/null 2>&1; then
+            local owner_repo=$(gh repo view --json owner,name --jq '{owner: .owner.login, name: .name}' 2>/dev/null || echo '{"owner":"","name":""}')
+            owner=$(echo "$owner_repo" | jq -r '.owner' 2>/dev/null || echo "")
+            repo_name=$(echo "$owner_repo" | jq -r '.name' 2>/dev/null || echo "")
+          else
+            local remote_url=$(git remote get-url origin 2>/dev/null || echo "")
+            if [[ "$remote_url" =~ github.com[:/]([^/]+)/([^/]+) ]]; then
+              owner="${BASH_REMATCH[1]}"
+              repo_name="${BASH_REMATCH[2]%.git}"
+            fi
+          fi
+        fi
         
         if [ -n "$owner" ] && [ -n "$repo_name" ]; then
           local bug_count=$(gh api "repos/$owner/$repo_name/pulls/$pr_number/comments" --jq '[.[] | select(.user.login == "cursor[bot]") | select(.body | contains("### Bug:"))] | length' 2>/dev/null || echo "0")
+          local current_comment_count=$(count_cursor_bot_comments "$pr_number" "$owner" "$repo_name")
+          if [ "$current_comment_count" -gt "$last_comment_count" ]; then
+            last_comment_increase_time=$elapsed
+          fi
+
+          # If new comments appeared, AGENT REVIEW has started
+          if [ "$current_comment_count" -gt "$initial_comment_count" ]; then
+            review_started=1
+          fi
           
           # Only report bugs if the count INCREASED (new bugs from current commit)
           if [ "$bug_count" -gt "$initial_bug_count" ]; then
@@ -193,18 +281,31 @@ wait_for_agent_review() {
             error "AGENT REVIEW found $new_bugs new bug(s) (total: $bug_count, existing: $initial_bug_count)!"
             return 1  # New bugs found
           fi
+          
+          # Update last counts for progress reporting
+          last_bug_count="$bug_count"
+          last_comment_count="$current_comment_count"
+
+          # If AGENT REVIEW has started and no new bugs appeared for the grace window after the last comment, assume completion
+          if [ "$review_started" -eq 1 ] && [ "$bug_count" -le "$initial_bug_count" ] && [ "$last_comment_increase_time" -ge 0 ] && [ $((elapsed - last_comment_increase_time)) -ge $completion_grace_seconds ]; then
+            success "AGENT REVIEW completed - no new bugs found (total comments: $current_comment_count, bugs: $bug_count)"
+            return 0
+          fi
         fi
       fi
     fi
     
     # Show progress
     if [ $((elapsed % 30)) -eq 0 ]; then
-      info "Still waiting for AGENT REVIEW... (${elapsed}s elapsed)"
+      if [ $review_started -eq 1 ]; then
+        info "AGENT REVIEW in progress... (${elapsed}s elapsed, $last_comment_count comment(s), $last_bug_count bug(s))"
+      else
+        info "Waiting for AGENT REVIEW to start... (${elapsed}s elapsed)"
+      fi
     fi
   done
   
   # Timeout reached - check one more time to see if AGENT REVIEW completed
-  # If still no bugs after timeout, assume AGENT REVIEW completed with no bugs
   if [ -f "./scripts/check-pr-bugs.sh" ]; then
     local final_bug_count_output
     final_bug_count_output=$(./scripts/check-pr-bugs.sh "$pr_number" 2>&1)
@@ -217,6 +318,17 @@ wait_for_agent_review() {
     fi
     
     local final_bug_count="$final_bug_count_output"
+    local final_comment_count=0
+    if [ -n "$owner" ] && [ -n "$repo_name" ]; then
+      final_comment_count=$(count_cursor_bot_comments "$pr_number" "$owner" "$repo_name")
+    fi
+    
+    # If comments exist but no new bugs, AGENT REVIEW completed successfully
+    if [ "$final_comment_count" -gt "$initial_comment_count" ] && [ "$final_bug_count" -le "$initial_bug_count" ]; then
+      success "AGENT REVIEW completed - no new bugs found (total comments: $final_comment_count, bugs: $final_bug_count)"
+      return 0  # AGENT REVIEW completed with no new bugs
+    fi
+    
     # Only report bugs if the count INCREASED (new bugs from current commit)
     if [ "$final_bug_count" -gt "$initial_bug_count" ]; then
       local new_bugs=$((final_bug_count - initial_bug_count))
@@ -228,11 +340,16 @@ wait_for_agent_review() {
     return 1  # Fail safe
   fi
   
-  # No bugs found after waiting - AGENT REVIEW likely completed successfully
-  warning "AGENT REVIEW timeout reached after ${MAX_REVIEW_WAIT_TIME}s."
-  warning "No bugs detected. AGENT REVIEW may have completed, or may still be in progress."
-  warning "Proceeding assuming no bugs. Check PR manually if uncertain."
-  return 0  # No bugs found (or timeout, but no bugs detected)
+  # No bugs found after waiting - check if AGENT REVIEW started
+  if [ $review_started -eq 1 ]; then
+    success "AGENT REVIEW completed - no new bugs found"
+    return 0  # AGENT REVIEW completed (comments exist, no new bugs)
+  else
+    warning "AGENT REVIEW timeout reached after ${MAX_REVIEW_WAIT_TIME}s."
+    warning "No AGENT REVIEW comments detected. AGENT REVIEW may not have started, or may still be in progress."
+    warning "Proceeding assuming no bugs. Check PR manually if uncertain."
+    return 0  # Timeout, but no bugs detected and no review started
+  fi
 }
 
 # Step 4: Check for bugs in PR
