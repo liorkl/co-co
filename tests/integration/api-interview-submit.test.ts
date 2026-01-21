@@ -212,6 +212,106 @@ describeIfDatabaseConfigured("POST /api/interview/submit", () => {
     });
     expect(upsertEmbeddingMock).toHaveBeenCalledWith(user.id, "CTO", "CTO summary", "summary");
   });
+
+  // Input validation tests
+  describe("input validation", () => {
+    it("returns 400 for invalid JSON", async () => {
+      const prisma = getTestPrismaClient();
+      const user = await prisma.user.create({ data: { email: "user@example.com", role: "CEO" } });
+
+      authMock.mockResolvedValue({ userId: user.id });
+      limitMock.mockResolvedValue({ success: true });
+
+      const request = new Request("http://localhost/api/interview/submit", {
+        method: "POST",
+        body: "not valid json",
+      });
+
+      const response = await handler(request);
+      expect(response.status).toBe(400);
+      expect(await response.json()).toEqual({ error: "Invalid JSON" });
+    });
+
+    it("returns 400 for invalid role", async () => {
+      const prisma = getTestPrismaClient();
+      const user = await prisma.user.create({ data: { email: "user@example.com", role: "CEO" } });
+
+      authMock.mockResolvedValue({ userId: user.id });
+      limitMock.mockResolvedValue({ success: true });
+
+      const request = new Request("http://localhost/api/interview/submit", {
+        method: "POST",
+        body: JSON.stringify({ role: "INVALID", structured: {}, freeText: "" }),
+      });
+
+      const response = await handler(request);
+      expect(response.status).toBe(400);
+      const body = await response.json();
+      expect(body.error).toBe("Invalid request data");
+    });
+
+    it("returns 400 when role is missing", async () => {
+      const prisma = getTestPrismaClient();
+      const user = await prisma.user.create({ data: { email: "user@example.com", role: "CEO" } });
+
+      authMock.mockResolvedValue({ userId: user.id });
+      limitMock.mockResolvedValue({ success: true });
+
+      const request = new Request("http://localhost/api/interview/submit", {
+        method: "POST",
+        body: JSON.stringify({ structured: {}, freeText: "" }),
+      });
+
+      const response = await handler(request);
+      expect(response.status).toBe(400);
+      const body = await response.json();
+      expect(body.error).toBe("Invalid request data");
+    });
+
+    it("returns 400 when structured data field exceeds max length", async () => {
+      const prisma = getTestPrismaClient();
+      const user = await prisma.user.create({ data: { email: "user@example.com", role: "CEO" } });
+
+      authMock.mockResolvedValue({ userId: user.id });
+      limitMock.mockResolvedValue({ success: true });
+
+      const request = new Request("http://localhost/api/interview/submit", {
+        method: "POST",
+        body: JSON.stringify({
+          role: "CEO",
+          structured: { name: "a".repeat(6000) }, // Exceeds 5000 char limit
+          freeText: "",
+        }),
+      });
+
+      const response = await handler(request);
+      expect(response.status).toBe(400);
+      const body = await response.json();
+      expect(body.error).toBe("Invalid request data");
+    });
+
+    it("returns 400 when freeText exceeds max length", async () => {
+      const prisma = getTestPrismaClient();
+      const user = await prisma.user.create({ data: { email: "user@example.com", role: "CEO" } });
+
+      authMock.mockResolvedValue({ userId: user.id });
+      limitMock.mockResolvedValue({ success: true });
+
+      const request = new Request("http://localhost/api/interview/submit", {
+        method: "POST",
+        body: JSON.stringify({
+          role: "CEO",
+          structured: {},
+          freeText: "a".repeat(11000), // Exceeds 10000 char limit
+        }),
+      });
+
+      const response = await handler(request);
+      expect(response.status).toBe(400);
+      const body = await response.json();
+      expect(body.error).toBe("Invalid request data");
+    });
+  });
 });
 
 

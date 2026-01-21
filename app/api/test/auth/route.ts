@@ -7,11 +7,15 @@ import { randomBytes } from "crypto";
  * Direct authentication endpoint for test users
  * Usage: GET /api/test/auth?email=sarah.chen@test.founderfinder.com
  * This bypasses email verification and directly creates a session
+ *
+ * SECURITY: Only available in development/test environments or when ALLOW_TEST_AUTH is set.
+ * Note: NODE_ENV is overridden by Next.js production builds, so CI uses ALLOW_TEST_AUTH=true.
  */
 export async function GET(request: Request) {
-  // Only allow in development
-  const isProduction = process.env.NODE_ENV !== "development" && process.env.NODE_ENV !== "test";
-  if (isProduction) {
+  // Only allow in development, test, or when explicitly enabled for CI
+  const env = process.env.NODE_ENV;
+  const allowTestAuth = process.env.ALLOW_TEST_AUTH === "true";
+  if (env !== "development" && env !== "test" && !allowTestAuth) {
     return NextResponse.json(
       { error: "Not available in production" },
       { status: 403 }
@@ -84,23 +88,21 @@ export async function GET(request: Request) {
     
     // Set the NextAuth session cookie
     // NextAuth v5 uses "authjs.session-token" in development
-    const isProduction = process.env.NODE_ENV !== "development" && process.env.NODE_ENV !== "test";
-    const cookieName = isProduction 
-      ? "__Secure-authjs.session-token"
-      : "authjs.session-token";
-    
+    // Note: This endpoint only runs in dev/test, so we use non-secure cookies
+    const cookieName = "authjs.session-token";
+
     response.cookies.set(cookieName, token, {
       httpOnly: true,
-      secure: isProduction,
+      secure: false, // Dev/test only
       sameSite: "lax",
       path: "/",
       maxAge: 30 * 24 * 60 * 60, // 30 days
     });
-    
+
     // Also set the legacy cookie name for compatibility
     response.cookies.set("next-auth.session-token", token, {
       httpOnly: true,
-      secure: isProduction,
+      secure: false, // Dev/test only
       sameSite: "lax",
       path: "/",
       maxAge: 30 * 24 * 60 * 60,

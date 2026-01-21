@@ -2,27 +2,51 @@ import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
 import { NextResponse } from "next/server";
 import { limit } from "@/lib/rateLimit";
+import { z } from "zod";
+
+const IntroRequestSchema = z.object({
+  targetId: z.string().min(1, "targetId is required").max(100),
+  feedback: z.string().max(2000).optional().nullable(),
+  rating: z.number().int().min(1).max(5).optional().nullable(),
+});
+
+const IntroUpdateSchema = z.object({
+  targetId: z.string().min(1, "targetId is required").max(100),
+  feedback: z.string().max(2000).optional(),
+  rating: z.number().int().min(1).max(5).optional(),
+});
 
 export async function POST(req: Request) {
   const session = await auth();
   if (!session || !(session as any).userId) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  
+
   const userId = (session as any).userId as string;
-  
+
   // Rate limit by user ID
   const res = await limit(`intro:${userId}`, "api");
   if (!res.success) {
     return NextResponse.json({ error: "Rate limit exceeded" }, { status: 429 });
   }
-  
+
   try {
-    const { targetId, feedback, rating } = await req.json();
-    
-    if (!targetId) {
-      return NextResponse.json({ error: "targetId is required" }, { status: 400 });
+    let body;
+    try {
+      body = await req.json();
+    } catch {
+      return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
     }
+
+    const parsed = IntroRequestSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Invalid request data", details: parsed.error.flatten() },
+        { status: 400 }
+      );
+    }
+
+    const { targetId, feedback, rating } = parsed.data;
     
     // Validate that target user exists
     const targetUser = await prisma.user.findUnique({
@@ -167,12 +191,23 @@ export async function PATCH(req: Request) {
   }
   
   try {
-    const { targetId, feedback, rating } = await req.json();
-    
-    if (!targetId) {
-      return NextResponse.json({ error: "targetId is required" }, { status: 400 });
+    let body;
+    try {
+      body = await req.json();
+    } catch {
+      return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
     }
-    
+
+    const parsed = IntroUpdateSchema.safeParse(body);
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Invalid request data", details: parsed.error.flatten() },
+        { status: 400 }
+      );
+    }
+
+    const { targetId, feedback, rating } = parsed.data;
+
     // Find existing request where user is requester
     const existingRequest = await prisma.introRequest.findUnique({
       where: {

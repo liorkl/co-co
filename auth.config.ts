@@ -54,13 +54,9 @@ export const authConfig: NextAuthConfig = {
             `;
 
           console.log("📧 Attempting to send email:", {
-            from,
             to: identifier,
             isNewUser,
-            url: url.substring(0, 100) + "...",
             hasApiKey: !!process.env.RESEND_API_KEY,
-            apiKeyPrefix: process.env.RESEND_API_KEY?.substring(0, 10),
-            nextAuthUrl: process.env.NEXTAUTH_URL,
           });
 
           if (!resend) {
@@ -75,11 +71,7 @@ export const authConfig: NextAuthConfig = {
             html: emailContent,
           });
 
-          console.log("✅ Email sent successfully! Result:", JSON.stringify(result, null, 2));
-          if (result.data?.id) {
-            console.log("📬 Email ID:", result.data.id);
-          }
-          console.log("🔗 Magic link URL:", url);
+          console.log("✅ Email sent successfully:", result.data?.id ? `ID: ${result.data.id}` : "No ID returned");
         } catch (error: any) {
           console.error("❌ Error sending email:", error);
           if (error?.message) {
@@ -147,7 +139,13 @@ export const authConfig: NextAuthConfig = {
     },
   },
   session: { strategy: "jwt" },
-  secret: process.env.NEXTAUTH_SECRET ?? "local-dev-secret",
+  secret: (() => {
+    if (process.env.NEXTAUTH_SECRET) return process.env.NEXTAUTH_SECRET;
+    if (process.env.NODE_ENV === "production") {
+      throw new Error("NEXTAUTH_SECRET must be set in production");
+    }
+    return "local-dev-secret-not-for-production";
+  })(),
   debug: process.env.NODE_ENV === "development",
   trustHost: true,
 };

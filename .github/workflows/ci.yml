@@ -38,6 +38,7 @@ jobs:
       NEXTAUTH_URL: http://localhost:3310
       PLAYWRIGHT_SMOKE_HOST: localhost
       PLAYWRIGHT_SMOKE_PORT: "3310"
+      ALLOW_TEST_AUTH: "true"
     steps:
       - name: Checkout
         uses: actions/checkout@v4
