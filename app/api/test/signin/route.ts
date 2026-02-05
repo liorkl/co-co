@@ -5,11 +5,24 @@ import { createHash, randomBytes } from "crypto";
 /**
  * Test endpoint to directly sign in as a test user
  * Usage: GET /api/test/signin?email=sarah.chen@test.founderfinder.com
- * 
+ *
  * This creates a verification token that NextAuth v5 will accept.
  * NextAuth v5 hashes tokens with the secret before storing/validating.
+ *
+ * SECURITY: Only available in development/test environments or when ALLOW_TEST_AUTH is set.
+ * Note: NODE_ENV is overridden by Next.js production builds, so CI uses ALLOW_TEST_AUTH=true.
  */
 export async function GET(request: Request) {
+  // Only allow in development, test, or when explicitly enabled for CI
+  const env = process.env.NODE_ENV;
+  const allowTestAuth = process.env.ALLOW_TEST_AUTH === "true";
+  if (env !== "development" && env !== "test" && !allowTestAuth) {
+    return NextResponse.json(
+      { error: "Not available in production" },
+      { status: 403 }
+    );
+  }
+
   const { searchParams } = new URL(request.url);
   const email = searchParams.get("email");
 

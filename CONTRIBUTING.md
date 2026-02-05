@@ -235,6 +235,37 @@ When several developers or Cursor agents work simultaneously, follow this branch
 - Write self-documenting code with clear variable names
 - Add comments for complex logic
 
+## Security Standards
+
+Security is a first-class concern. Follow these standards for all code changes:
+
+### API Endpoints
+- **Always validate input with Zod** - Never trust user input. Use Zod schemas to validate all request bodies, query params, and route params.
+- **Validate early, fail fast** - Validation should happen at the start of the handler, before any business logic.
+- **Return generic error messages** - Don't leak internal details. Use `{ error: "Invalid request" }` not `{ error: "SQL syntax error at line 42" }`.
+
+### Authentication & Secrets
+- **Never log sensitive data** - No API keys, tokens, secrets, passwords, or magic links in logs. Even partial values (prefixes) can aid attacks.
+- **Fail loudly on missing secrets in production** - Use explicit checks that throw errors, not silent fallbacks.
+- **Guard test/dev endpoints** - Any endpoint that bypasses normal auth MUST check `NODE_ENV === "development" || NODE_ENV === "test"` and return 403 otherwise.
+
+### Logging
+- **Log what happened, not sensitive details** - Good: `"Email sent successfully"`. Bad: `"Email sent to user@example.com with token abc123"`.
+- **Use boolean flags for presence checks** - Log `hasApiKey: !!process.env.API_KEY` not the key itself.
+
+### Environment Variables
+- **Never commit `.env` files** - Only `.env.example` with placeholder values.
+- **Validate env vars at startup** - Use Zod or similar to validate required env vars exist before the app starts.
+
+### Lessons Learned
+When security issues are discovered and fixed, document them here to prevent recurrence:
+
+1. **2026-01-21: Sensitive data in logs** - Auth config was logging API key prefixes and magic link URLs. Fixed by removing sensitive fields from log statements.
+2. **2026-01-21: Weak secret fallback** - NEXTAUTH_SECRET had a hardcoded fallback that would work in production. Fixed by throwing error if not set in production.
+3. **2026-01-21: Missing input validation** - API endpoints accepted unvalidated JSON. Fixed by adding Zod schemas to all mutation endpoints.
+4. **2026-01-21: Unguarded test endpoint** - `/api/test/signin` had no production check. Fixed by adding explicit NODE_ENV guard.
+5. **2026-01-21: Secret in documentation** - NEXTAUTH_SECRET value was committed in SETUP_ENV.md as an "example". Never put real or example secrets in committed files - always use obvious placeholders like `<generate-your-own>`. Secret was rotated and docs updated.
+
 ## GitHub Automation
 
 ### Automated PR Creation

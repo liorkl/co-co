@@ -65,8 +65,8 @@ Edit `.env.local` and replace the placeholder values:
 
 ```env
 DATABASE_URL="postgresql://..."  # ← Get from Neon/Supabase
-NEXTAUTH_SECRET="REDACTED_SECRET_ROTATED"  # ✓ Already set
-NEXTAUTH_URL="http://localhost:3000"  # ✓ Already set
+NEXTAUTH_SECRET="<run: openssl rand -base64 32>"  # ← Generate your own secret
+NEXTAUTH_URL="http://localhost:3000"
 RESEND_API_KEY="re_..."  # ← Get from Resend
 EMAIL_FROM="FounderFinder <no-reply@yourdomain.com>"  # ← Your email
 OPENAI_API_KEY="sk-..."  # ← Get from OpenAI

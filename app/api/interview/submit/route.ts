@@ -4,6 +4,18 @@ import { NextResponse } from "next/server";
 import { summarizeProfile } from "@/lib/ai";
 import { upsertEmbedding } from "@/lib/embeddings";
 import { limit } from "@/lib/rateLimit";
+import { z } from "zod";
+
+const MAX_FIELD_LENGTH = 5000;
+
+const InterviewSubmitSchema = z.object({
+  role: z.enum(["CEO", "CTO"]),
+  structured: z.record(z.string().max(MAX_FIELD_LENGTH)).refine(
+    (obj) => Object.keys(obj).length <= 50,
+    { message: "Too many fields in structured data" }
+  ),
+  freeText: z.string().max(10000).optional().nullable(),
+});
 
 export async function POST(req: Request) {
   const session = await auth();
@@ -16,7 +28,24 @@ export async function POST(req: Request) {
   if (!res.success) {
     return NextResponse.json({ error: "Rate limit" }, { status: 429 });
   }
-  const { role, structured, freeText } = await req.json();
+
+  let body;
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
+  }
+
+  const parsed = InterviewSubmitSchema.safeParse(body);
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "Invalid request data", details: parsed.error.flatten() },
+      { status: 400 }
+    );
+  }
+
+  const { role, structured, freeText: rawFreeText } = parsed.data;
+  const freeText = rawFreeText ?? undefined; // Convert null to undefined for type compatibility
 
   // Save interview
   await prisma.interviewResponse.create({
