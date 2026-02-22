@@ -7,7 +7,7 @@ afterEach(() => {
 });
 
 describe("AI helpers", () => {
-  it("returns empty strings when OpenAI API key is not present", async () => {
+  it("returns mock responses when OpenAI API key is not present", async () => {
     // Mock OpenAI to prevent browser environment error when API key is missing
     vi.doMock("openai", () => ({
       default: class {
@@ -22,11 +22,15 @@ describe("AI helpers", () => {
 
     const { summarizeProfile, buildMatchRationale } = await import("@/lib/ai");
 
-    await expect(
-      summarizeProfile({ role: "CEO", structured: { headline: "CTO wanted" }, freeText: "Details" })
-    ).resolves.toBe("");
+    // Now returns mock summary instead of empty string
+    const summary = await summarizeProfile({ role: "CEO", structured: { headline: "CTO wanted" }, freeText: "Details" });
+    expect(summary).toContain("CEO");
+    expect(summary.length).toBeGreaterThan(0);
 
-    await expect(buildMatchRationale("Summary A", "Summary B")).resolves.toBe("");
+    // Now returns mock rationale instead of empty string
+    const rationale = await buildMatchRationale("Summary A", "Summary B");
+    expect(rationale).toContain("•");
+    expect(rationale.length).toBeGreaterThan(0);
   });
 
   it("delegates to OpenAI chat completions when configured", async () => {

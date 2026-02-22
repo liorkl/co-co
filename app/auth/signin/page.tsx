@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { signIn } from "next-auth/react";
 import Link from "next/link";
+import { DevLogin } from "@/components/DevLogin";
 
 export default function SignInPage() {
   const [email, setEmail] = useState("");
@@ -88,6 +89,8 @@ export default function SignInPage() {
           </Link>
         </p>
         </div>
+
+        <DevLogin />
       </div>
     </div>
   );

@@ -84,6 +84,12 @@ Required: `DATABASE_URL`, `NEXTAUTH_SECRET`, `NEXTAUTH_URL`, `RESEND_API_KEY`, `
 
 Optional: `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` (rate limiting)
 
+### Testing & Development Variables
+
+- `MOCK_OPENAI=true` - Use mock AI responses instead of real OpenAI API (for testing without API quota)
+- `NEXT_PUBLIC_SHOW_DEV_LOGIN=true` - Show dev quick-login panel on signin page (test users only)
+- `ALLOW_TEST_AUTH=true` - Allow test auth endpoints in production builds (for CI E2E tests)
+
 ## Security Standards
 
 See `CONTRIBUTING.md` for full security standards. Key rules:

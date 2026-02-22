@@ -55,7 +55,7 @@ describe("summarizeProfile", () => {
     restoreEnv();
   });
 
-  it("returns empty string when OPENAI_API_KEY missing", async () => {
+  it("returns mock summary when OPENAI_API_KEY missing", async () => {
     delete process.env.OPENAI_API_KEY;
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
 
@@ -66,9 +66,11 @@ describe("summarizeProfile", () => {
       freeText: "experienced",
     });
 
-    expect(result).toBe("");
+    // Now returns mock summary instead of empty string
+    expect(result).toContain("Alice");
+    expect(result).toContain("CEO");
     expect(warnSpy).toHaveBeenCalledWith(
-      expect.stringContaining("OPENAI_API_KEY not configured; returning empty summary.")
+      expect.stringContaining("OPENAI_API_KEY not configured; returning mock summary.")
     );
   });
 
@@ -99,7 +101,8 @@ describe("summarizeProfile", () => {
     expect(result).toBe("Short summary");
   });
 
-  it("returns empty string when OpenAI call throws", async () => {
+  it("returns mock summary when OpenAI call throws", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
     const { summarizeProfile } = await loadModule({
       throwError: true,
     });
@@ -109,7 +112,12 @@ describe("summarizeProfile", () => {
       structured: { name: "Bob" },
     });
 
-    expect(result).toBe("");
+    // Now falls back to mock summary instead of empty string
+    expect(result).toContain("Bob");
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining("OpenAI API error; falling back to mock summary."),
+      expect.any(Error)
+    );
   });
 });
 
@@ -119,16 +127,17 @@ describe("buildMatchRationale", () => {
     restoreEnv();
   });
 
-  it("returns empty string when OPENAI_API_KEY missing", async () => {
+  it("returns mock rationale when OPENAI_API_KEY missing", async () => {
     delete process.env.OPENAI_API_KEY;
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
 
     const { buildMatchRationale } = await import("@/lib/ai");
     const result = await buildMatchRationale("CEO summary", "CTO summary");
 
-    expect(result).toBe("");
+    // Now returns mock rationale instead of empty string
+    expect(result).toContain("•");
     expect(warnSpy).toHaveBeenCalledWith(
-      expect.stringContaining("OPENAI_API_KEY not configured; skipping match rationale generation.")
+      expect.stringContaining("OPENAI_API_KEY not configured; returning mock rationale.")
     );
   });
 
@@ -150,12 +159,18 @@ describe("buildMatchRationale", () => {
     expect(result).toBe("• Point 1\n• Point 2");
   });
 
-  it("returns empty string when OpenAI call fails", async () => {
+  it("returns mock rationale when OpenAI call fails", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
     const { buildMatchRationale } = await loadModule({ throwError: true });
 
     const result = await buildMatchRationale("CEO", "CTO");
 
-    expect(result).toBe("");
+    // Now falls back to mock rationale instead of empty string
+    expect(result).toContain("•");
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining("OpenAI API error; falling back to mock rationale."),
+      expect.any(Error)
+    );
   });
 });
 

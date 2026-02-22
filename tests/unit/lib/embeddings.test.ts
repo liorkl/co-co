@@ -58,7 +58,7 @@ describe("embed", () => {
     restoreEnv();
   });
 
-  it("returns empty Uint8Array when OPENAI_API_KEY is missing", async () => {
+  it("returns mock embedding when OPENAI_API_KEY is missing", async () => {
     delete process.env.OPENAI_API_KEY;
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
 
@@ -66,9 +66,10 @@ describe("embed", () => {
     const result = await embed("hello world");
 
     expect(result).toBeInstanceOf(Uint8Array);
-    expect(result.byteLength).toBe(0);
+    // Mock embedding returns 1536-dimensional vector (1536 * 4 bytes = 6144 bytes)
+    expect(result.byteLength).toBe(1536 * 4);
     expect(warnSpy).toHaveBeenCalledWith(
-      expect.stringContaining("OPENAI_API_KEY not configured")
+      expect.stringContaining("OPENAI_API_KEY not configured; returning mock embedding.")
     );
   });
 
@@ -98,16 +99,24 @@ describe("upsertEmbedding", () => {
     restoreEnv();
   });
 
-  it("skips upsert when API key missing", async () => {
+  it("uses mock embedding when API key missing", async () => {
     delete process.env.OPENAI_API_KEY;
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
     const { upsertEmbedding } = await import("@/lib/embeddings");
 
     await upsertEmbedding("user-1", "CEO", "text", "summary");
 
-    expect(prismaCreateMock).not.toHaveBeenCalled();
+    // Now creates embedding with mock data instead of skipping
+    expect(prismaCreateMock).toHaveBeenCalledWith({
+      data: {
+        userId: "user-1",
+        role: "CEO",
+        source: "summary",
+        vector: expect.any(Buffer),
+      },
+    });
     expect(warnSpy).toHaveBeenCalledWith(
-      expect.stringContaining("OPENAI_API_KEY not configured")
+      expect.stringContaining("OPENAI_API_KEY not configured; returning mock embedding.")
     );
   });
 

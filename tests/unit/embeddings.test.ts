@@ -7,7 +7,7 @@ afterEach(() => {
 });
 
 describe("embeddings helpers", () => {
-  it("returns empty bytes and skips persistence when OpenAI API key is missing", async () => {
+  it("returns mock embedding and persists when OpenAI API key is missing", async () => {
     // Mock OpenAI to prevent browser environment error when API key is missing
     vi.doMock("openai", () => ({
       default: class {
@@ -32,10 +32,19 @@ describe("embeddings helpers", () => {
 
     const bytes = await embed("Hello world");
     expect(bytes).toBeInstanceOf(Uint8Array);
-    expect(bytes.length).toBe(0);
+    // Now returns mock embedding (1536 dimensions * 4 bytes = 6144 bytes)
+    expect(bytes.length).toBe(1536 * 4);
 
     await upsertEmbedding("user-1", "CEO", "Hello world", "summary");
-    expect(prismaMock.embedding.create).not.toHaveBeenCalled();
+    // Now persists mock embedding instead of skipping
+    expect(prismaMock.embedding.create).toHaveBeenCalledWith({
+      data: {
+        userId: "user-1",
+        role: "CEO",
+        source: "summary",
+        vector: expect.any(Buffer),
+      },
+    });
   });
 
   it("stores generated embeddings when OpenAI API key is configured", async () => {
