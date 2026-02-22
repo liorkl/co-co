@@ -10,6 +10,28 @@ A platform that helps CEOs find their tech cofounders (CTOs/first developers) an
 - **Match insights** - AI-generated rationale and detailed profile information for each match
 - **Test data generation** - Scripts to populate test users for development
 
+## Screenshots
+
+### Landing Page
+Choose your role to get started - CEO looking for a technical cofounder or CTO looking for a business cofounder.
+
+![Landing Page](docs/screenshots/01-landing.png)
+
+### Sign In
+Passwordless authentication via magic link. Dev mode includes quick login for test users.
+
+![Sign In](docs/screenshots/02-signin.png)
+
+### Onboarding
+Multi-step interview tailored to your role, gathering information for AI-powered matching.
+
+![Onboarding](docs/screenshots/04-ceo-onboarding.png)
+
+### Matches
+View your matches with compatibility scores and AI-generated insights explaining why you're a good fit.
+
+![Matches](docs/screenshots/05-matches.png)
+
 ## Tech Stack
 
 - **Next.js 14** (App Router) with TypeScript
