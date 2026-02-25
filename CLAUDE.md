@@ -11,18 +11,15 @@ npm run build            # Production build
 npm run lint             # ESLint
 npx tsc --noEmit         # Type check
 
-# Database
+# Database (see prisma/CLAUDE.md for full details)
 npm run prisma:generate  # Generate Prisma client (run after schema changes)
 npm run prisma:migrate   # Run migrations (dev)
 
-# Testing
+# Testing (see tests/CLAUDE.md for full details)
 npm run test:unit        # Unit tests (Vitest)
 npm run test:integration # Integration tests
 npm run test:e2e         # E2E tests (Playwright, requires running server)
 npm run test:e2e:smoke   # Full smoke test (builds, starts server, runs tests)
-
-# Run single test file
-npx vitest run tests/unit/lib/match.test.ts
 
 # CI verification (run before pushing)
 npm run ci:verify        # Quick: lint + typecheck (skips npm ci)
@@ -58,25 +55,14 @@ npm run push             # Runs checks, pushes, creates/updates PR automatically
 4. **Matching**: Cosine similarity on embeddings → AI-generated match rationale
 
 ### Key Directories
-- `app/api/` - API routes (interview submit, match preview, user role, intro requests)
+- `app/api/` - API routes — see `app/api/CLAUDE.md` for patterns and conventions
 - `lib/` - Core business logic:
   - `ai.ts` - OpenAI summarization & rationale generation
   - `embeddings.ts` - Embedding generation & persistence
   - `match.ts` - Cosine similarity matching algorithm
   - `rateLimit.ts` - Upstash rate limiting
-- `prisma/schema.prisma` - Database models (User, Profile, Startup, TechBackground, Embedding, Match, IntroRequest)
-
-### Database
-PostgreSQL with **pgvector** extension for vector similarity. Key models:
-- `User` with `role` (CEO/CTO) and related `Profile`, `Startup` (CEO), or `TechBackground` (CTO)
-- `Embedding` stores vector representations for matching
-- `Match` stores pre-computed match scores and AI rationale
-
-### Testing Structure
-- `tests/unit/` - Vitest unit tests for lib functions
-- `tests/integration/` - API route & DB integration tests
-- `tests/e2e/` - Playwright browser tests
-- Coverage thresholds: 85% statements/functions/lines, 71% branches
+- `prisma/` - Schema and migrations — see `prisma/CLAUDE.md` for models and rules
+- `tests/` - Unit, integration, and E2E tests — see `tests/CLAUDE.md` for conventions
 
 ## Environment Variables
 
@@ -84,11 +70,7 @@ Required: `DATABASE_URL`, `NEXTAUTH_SECRET`, `NEXTAUTH_URL`, `RESEND_API_KEY`, `
 
 Optional: `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` (rate limiting)
 
-### Testing & Development Variables
-
-- `MOCK_OPENAI=true` - Use mock AI responses instead of real OpenAI API (for testing without API quota)
-- `NEXT_PUBLIC_SHOW_DEV_LOGIN=true` - Show dev quick-login panel on signin page (test users only)
-- `ALLOW_TEST_AUTH=true` - Allow test auth endpoints in production builds (for CI E2E tests)
+Testing/dev env vars (`MOCK_OPENAI`, `NEXT_PUBLIC_SHOW_DEV_LOGIN`, `ALLOW_TEST_AUTH`) — see `tests/CLAUDE.md`.
 
 ## Security Standards
 
