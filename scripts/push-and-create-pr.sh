@@ -111,7 +111,8 @@ if [ $? -eq 0 ]; then
   echo "✅ Pull request created successfully!"
   echo "   $PR_URL"
   echo ""
-  echo "💡 You can view it in Cursor or open it in your browser"
+  open -a "Google Chrome" "$PR_URL"
+  echo "🌐 Opened in Google Chrome"
 else
   echo "⚠️  Failed to create PR automatically"
   echo "   PR description is in PR_DESCRIPTION.md"
