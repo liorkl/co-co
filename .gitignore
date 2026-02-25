@@ -44,6 +44,9 @@ PR_DESCRIPTION.md
 # Note: Migration SQL files are typically committed, but exclude if they contain sensitive data
 # /prisma/migrations/*.sql
 
+# Claude Code personal overrides (project settings are committed, personal overrides are not)
+.claude/settings.local.json
+
 # IDE
 .vscode/
 .idea/
