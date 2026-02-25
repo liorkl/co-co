@@ -92,8 +92,4 @@ Optional: `UPSTASH_REDIS_REST_URL`, `UPSTASH_REDIS_REST_TOKEN` (rate limiting)
 
 ## Security Standards
 
-See `CONTRIBUTING.md` for full security standards. Key rules:
-- **Always validate API input with Zod** - All endpoints must validate request bodies
-- **Never log sensitive data** - No API keys, tokens, or magic links in logs
-- **Guard test endpoints** - Must check `NODE_ENV` and return 403 in production
-- **Document lessons learned** - Add security fixes to the Lessons Learned section in CONTRIBUTING.md
+@CONTRIBUTING.md
