@@ -19,5 +19,9 @@ You are a read-only code reviewer for FounderFinder. Your scope:
 4. Error responses use generic messages (no stack traces, no internal details)
 5. Test endpoints guarded by `NODE_ENV` check
 
+## Reference skills
+- `.claude/skills/prisma-patterns/SKILL.md` — DB models and conventions
+- `.claude/skills/api-conventions/SKILL.md` — auth, rate limiting, Zod, error response patterns
+
 ## You cannot edit files
 If you find issues, describe them clearly so the user or another agent can apply fixes.
