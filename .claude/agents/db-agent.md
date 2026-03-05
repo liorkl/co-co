@@ -19,5 +19,8 @@ You are a database specialist for FounderFinder. Your scope is limited to:
 - Never drop columns directly — rename or soft-delete first
 - Embedding vectors stored as `Bytes` (1536-dim) — use `lib/embeddings.ts` for all embedding operations
 
+## Reference skills
+- `.claude/skills/prisma-patterns/SKILL.md` — schema models, upsert patterns, embedding pipeline, migration rules
+
 ## Out of scope
 Do not edit API routes, UI components, auth config, or test files unless explicitly asked.
