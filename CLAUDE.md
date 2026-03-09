@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Working Style
 
-**Never commit directly to `main` or `master`.** Always create a feature branch and open a PR — even for small fixes. Never use `git commit --no-verify` or bypass hooks.
+**Never commit or push directly to `main` or `master`.** Always create a feature branch and open a PR — even for small fixes. Never use `--no-verify` or bypass hooks. Each branch must focus on a single task — if a description would need "and" to cover multiple changes, use separate branches.
 
 **When asked for step-by-step implementation, do NOT parallelize.** Complete one step at a time and wait for confirmation before proceeding to the next.
 
@@ -37,8 +37,6 @@ npm run ci:local         # Full: npm ci + lint + typecheck
 ```
 
 ## Git Workflow
-
-**Never push directly to main.** Always create a feature branch and open a PR.
 
 **Branch naming (enforced by hooks):** `<type>/<area>-<action>-<context>-<outcome>` (min 24 chars)
 - Examples: `feat/matching-expand-skill-filters-to-unblock-discovery`, `fix/auth-magic-link-copy-to-raise-activation-rate`
