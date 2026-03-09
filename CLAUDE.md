@@ -2,6 +2,16 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Working Style
+
+**Never commit directly to `main` or `master`.** Always create a feature branch and open a PR — even for small fixes. Never use `git commit --no-verify` or bypass hooks.
+
+**When asked for step-by-step implementation, do NOT parallelize.** Complete one step at a time and wait for confirmation before proceeding to the next.
+
+**Always plan before coding.** When starting a non-trivial task, briefly describe the approach and get approval before writing code. Follow existing project conventions and patterns — don't introduce new ones (e.g. Makefiles, hardcoded paths) without discussion.
+
+**Never read, commit, or expose any `.env*` file.** Treat all dotenv files as sensitive, even in examples or documentation.
+
 ## Build & Development Commands
 
 ```bash
@@ -25,16 +35,6 @@ npm run test:e2e:smoke   # Full smoke test (builds, starts server, runs tests)
 npm run ci:verify        # Quick: lint + typecheck (skips npm ci)
 npm run ci:local         # Full: npm ci + lint + typecheck
 ```
-
-## Working Style
-
-**Never commit directly to `main` or `master`.** Always create a feature branch and open a PR — even for small fixes.
-
-**When asked for step-by-step implementation, do NOT parallelize.** Complete one step at a time and wait for confirmation before proceeding to the next.
-
-**Always plan before coding.** When starting a non-trivial task, briefly describe the approach and get approval before writing code. Follow existing project conventions and patterns — don't introduce new ones (e.g. Makefiles, hardcoded paths) without discussion.
-
-**Never read, commit, or expose `.env.local` or any dotenv file.** Treat all dotenv files as sensitive, even in examples or documentation.
 
 ## Git Workflow
 
