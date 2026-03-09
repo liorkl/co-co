@@ -115,7 +115,7 @@ export async function POST(req: Request) {
   } catch (error: any) {
     console.error("Error creating intro request:", error);
     return NextResponse.json(
-      { error: error.message || "Failed to create intro request" },
+      { error: "Failed to create intro request" },
       { status: 500 }
     );
   }
@@ -144,7 +144,6 @@ export async function GET() {
           select: {
             id: true,
             name: true,
-            email: true,
             role: true,
           },
         },
@@ -152,7 +151,6 @@ export async function GET() {
           select: {
             id: true,
             name: true,
-            email: true,
             role: true,
           },
         },
@@ -169,7 +167,7 @@ export async function GET() {
   } catch (error: any) {
     console.error("Error fetching intro requests:", error);
     return NextResponse.json(
-      { error: error.message || "Failed to fetch intro requests" },
+      { error: "Failed to fetch intro requests" },
       { status: 500 }
     );
   }
@@ -249,7 +247,7 @@ export async function PATCH(req: Request) {
   } catch (error: any) {
     console.error("Error updating intro request feedback:", error);
     return NextResponse.json(
-      { error: error.message || "Failed to update feedback" },
+      { error: "Failed to update feedback" },
       { status: 500 }
     );
   }
