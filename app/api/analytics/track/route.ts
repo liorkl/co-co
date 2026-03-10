@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { auth } from "@/auth";
 import { track, type AnalyticsEvent } from "@/lib/analytics";
 
 /**
@@ -6,6 +7,11 @@ import { track, type AnalyticsEvent } from "@/lib/analytics";
  * Can be called from client components to track events server-side
  */
 export async function POST(req: NextRequest) {
+  const session = await auth();
+  if (!session || !(session as any).userId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
   try {
     const event = await req.json();
     
