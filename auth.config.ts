@@ -85,7 +85,7 @@ export const authConfig: NextAuthConfig = {
   events: {
     async signIn({ user, account, isNewUser }) {
       console.log("🔐 signIn event triggered:", {
-        userEmail: user?.email,
+        hasEmail: !!user?.email,
         accountProvider: account?.provider,
         isNewUser,
       });
@@ -94,7 +94,7 @@ export const authConfig: NextAuthConfig = {
   callbacks: {
     async signIn({ user, account }) {
       console.log("🔐 signIn callback triggered:", {
-        userEmail: user?.email,
+        hasEmail: !!user?.email,
         accountProvider: account?.provider,
         userId: user?.id,
       });
@@ -108,10 +108,10 @@ export const authConfig: NextAuthConfig = {
       try {
         const existing = await prisma.user.findUnique({ where: { email: userEmail } });
         if (!existing) {
-          console.log("👤 Creating new user:", userEmail);
+          console.log("👤 Creating new user");
           await prisma.user.create({ data: { email: userEmail, role: "CEO" as const } });
         } else {
-          console.log("✅ User already exists:", userEmail);
+          console.log("✅ User already exists");
         }
         return true;
       } catch (error) {
@@ -120,7 +120,7 @@ export const authConfig: NextAuthConfig = {
       }
     },
     async redirect({ url, baseUrl }) {
-      console.log("🔀 Redirect callback:", { url, baseUrl });
+      console.log("🔀 Redirect callback triggered");
       return baseUrl;
     },
     async session({ session, token }) {
