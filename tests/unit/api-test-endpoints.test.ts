@@ -64,7 +64,7 @@ describe("Test endpoint production guards", () => {
       expect(await response.json()).toEqual({ error: "Not available in production" });
     });
 
-    it("allows access when ALLOW_TEST_AUTH is true (for CI)", async () => {
+    it("returns 403 even when ALLOW_TEST_AUTH is true (bypass removed)", async () => {
       vi.stubEnv("NODE_ENV", "production");
       vi.stubEnv("ALLOW_TEST_AUTH", "true");
 
@@ -73,8 +73,9 @@ describe("Test endpoint production guards", () => {
       const request = new Request("http://localhost/api/test/auth?email=test@test.founderfinder.com");
       const response = await GET(request);
 
-      // Should not be 403 - will fail for other reasons (missing user) but passes guard
-      expect(response.status).not.toBe(403);
+      // ALLOW_TEST_AUTH no longer bypasses the NODE_ENV guard
+      expect(response.status).toBe(403);
+      expect(await response.json()).toEqual({ error: "Not available in production" });
     });
   });
 
@@ -118,7 +119,7 @@ describe("Test endpoint production guards", () => {
       expect(await response.json()).toEqual({ error: "Not available in production" });
     });
 
-    it("allows access when ALLOW_TEST_AUTH is true (for CI)", async () => {
+    it("returns 403 even when ALLOW_TEST_AUTH is true (bypass removed)", async () => {
       vi.stubEnv("NODE_ENV", "production");
       vi.stubEnv("ALLOW_TEST_AUTH", "true");
 
@@ -127,8 +128,9 @@ describe("Test endpoint production guards", () => {
       const request = new Request("http://localhost/api/test/signin?email=test@test.founderfinder.com");
       const response = await GET(request);
 
-      // Should not be 403 - will fail for other reasons (missing user) but passes guard
-      expect(response.status).not.toBe(403);
+      // ALLOW_TEST_AUTH no longer bypasses the NODE_ENV guard
+      expect(response.status).toBe(403);
+      expect(await response.json()).toEqual({ error: "Not available in production" });
     });
   });
 });
